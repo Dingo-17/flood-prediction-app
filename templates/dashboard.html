@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌊 Bangladesh Flood Prediction Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .status-bar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .status-item {
+            text-align: center;
+        }
+
+        .status-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .status-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .card h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        .map-container {
+            height: 400px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .location-list {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .location-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #ecf0f1;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .location-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .location-info h4 {
+            color: #2c3e50;
+            margin-bottom: 0.3rem;
+        }
+
+        .location-details {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .risk-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        .risk-high {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .risk-low {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .risk-medium {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        .chart-container {
+            height: 300px;
+            margin-top: 1rem;
+        }
+
+        .alerts-container {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .alert-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem;
+            border-left: 4px solid #e74c3c;
+            background-color: #fdf2f2;
+            margin-bottom: 0.5rem;
+            border-radius: 5px;
+        }
+
+        .alert-warning {
+            border-left-color: #e74c3c;
+            background-color: #fdf2f2;
+        }
+
+        .alert-info {
+            border-left-color: #3498db;
+            background-color: #f4f8fd;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #7f8c8d;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: transform 0.2s;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-bar {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌊 Bangladesh Flood Prediction Dashboard</h1>
+        <p>Real-time AI-powered flood monitoring and prediction system</p>
+    </div>
+
+    <div class="dashboard">
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-value" id="systemStatus">🟢 Operational</div>
+                <div class="status-label">System Status</div>
+            </div>
+            <div class="status-item">
+                <div class="status-value" id="locationsCount">5</div>
+                <div class="status-label">Monitored Locations</div>
+            </div>
+            <div class="status-item">
+                <div class="status-value" id="lastUpdate">Loading...</div>
+                <div class="status-label">Last Update</div>
+            </div>
+            <div class="status-item">
+                <button class="refresh-btn" onclick="refreshData()">🔄 Refresh</button>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>📍 Bangladesh Monitoring Map</h3>
+                <div id="map" class="map-container"></div>
+            </div>
+
+            <div class="card">
+                <h3>🏙️ Location Status</h3>
+                <div id="locationsList" class="location-list">
+                    <div class="loading">Loading location data...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>📊 Risk Trends</h3>
+                <div class="chart-container">
+                    <canvas id="riskChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🚨 Recent Alerts</h3>
+                <div id="alertsList" class="alerts-container">
+                    <div class="loading">Loading alerts...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let map;
+        let markers = {};
+        let riskChart;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMap();
+            loadDashboardData();
+            initializeChart();
+            
+            // Auto-refresh every 5 minutes
+            setInterval(refreshData, 300000);
+        });
+
+        function initializeMap() {
+            // Initialize Leaflet map centered on Bangladesh
+            map = L.map('map').setView([23.6850, 90.3563], 7);
+            
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        }
+
+        function initializeChart() {
+            const ctx = document.getElementById('riskChart').getContext('2d');
+            riskChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Flood Risk Probability',
+                        data: [],
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                        borderWidth: 2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1,
+                            ticks: {
+                                callback: function(value) {
+                                    return (value * 100) + '%';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadDashboardData() {
+            try {
+                // Load system status
+                const statusResponse = await fetch('/api/status');
+                const statusData = await statusResponse.json();
+                updateSystemStatus(statusData);
+
+                // Load locations
+                const locationsResponse = await fetch('/api/locations');
+                const locationsData = await locationsResponse.json();
+                updateLocationsMap(locationsData);
+                await updateLocationsList(locationsData);
+
+                // Load alerts
+                const alertsResponse = await fetch('/api/alerts');
+                const alertsData = await alertsResponse.json();
+                updateAlertsList(alertsData.alerts);
+
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        function updateSystemStatus(data) {
+            document.getElementById('systemStatus').textContent = 
+                data.models_loaded ? '🟢 Operational' : '🟡 Limited';
+            document.getElementById('locationsCount').textContent = data.monitored_locations;
+            document.getElementById('lastUpdate').textContent = 
+                new Date(data.last_update).toLocaleTimeString();
+        }
+
+        function updateLocationsMap(locations) {
+            // Clear existing markers
+            Object.values(markers).forEach(marker => map.removeLayer(marker));
+            markers = {};
+
+            // Add markers for each location
+            locations.forEach(location => {
+                const marker = L.marker([location.lat, location.lon])
+                    .addTo(map)
+                    .bindPopup(`
+                        <strong>${location.name}</strong><br>
+                        Flood Threshold: ${location.threshold}m<br>
+                        <button onclick="showLocationDetails('${location.name}')">View Details</button>
+                    `);
+                
+                markers[location.name] = marker;
+            });
+        }
+
+        async function updateLocationsList(locations) {
+            const container = document.getElementById('locationsList');
+            container.innerHTML = '';
+
+            for (const location of locations) {
+                try {
+                    const response = await fetch(`/api/predict/${location.name}`);
+                    const data = await response.json();
+                    
+                    const riskClass = data.flood_risk === 1 ? 'risk-high' : 'risk-low';
+                    const riskText = data.status;
+                    
+                    const locationElement = document.createElement('div');
+                    locationElement.className = 'location-item';
+                    locationElement.onclick = () => showLocationDetails(location.name);
+                    
+                    locationElement.innerHTML = `
+                        <div class="location-info">
+                            <h4>${location.name}</h4>
+                            <div class="location-details">
+                                Rainfall: ${data.current_rainfall}mm | 
+                                Water Level: ${data.current_water_level}m
+                            </div>
+                        </div>
+                        <div class="risk-badge ${riskClass}">
+                            ${riskText} (${(data.risk_probability * 100).toFixed(0)}%)
+                        </div>
+                    `;
+                    
+                    container.appendChild(locationElement);
+                    
+                    // Update marker color based on risk
+                    if (markers[location.name]) {
+                        const icon = L.divIcon({
+                            html: data.flood_risk === 1 ? '🔴' : '🟢',
+                            iconSize: [20, 20],
+                            className: 'risk-marker'
+                        });
+                        markers[location.name].setIcon(icon);
+                    }
+                    
+                } catch (error) {
+                    console.error(`Error loading data for ${location.name}:`, error);
+                }
+            }
+        }
+
+        function updateAlertsList(alerts) {
+            const container = document.getElementById('alertsList');
+            
+            if (alerts.length === 0) {
+                container.innerHTML = '<div class="loading">No recent alerts</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            alerts.reverse().forEach(alert => {
+                const alertElement = document.createElement('div');
+                const alertClass = alert.alert_type === 'flood_warning' ? 'alert-warning' : 'alert-info';
+                const alertIcon = alert.alert_type === 'flood_warning' ? '🚨' : '📊';
+                
+                alertElement.className = `alert-item ${alertClass}`;
+                alertElement.innerHTML = `
+                    <div>
+                        <strong>${alertIcon} ${alert.location}</strong><br>
+                        <small>${new Date(alert.timestamp).toLocaleString()}</small>
+                    </div>
+                    <div>
+                        ${(alert.risk_probability * 100).toFixed(0)}%
+                    </div>
+                `;
+                
+                container.appendChild(alertElement);
+            });
+        }
+
+        async function showLocationDetails(locationName) {
+            try {
+                const response = await fetch(`/api/history/${locationName}`);
+                const data = await response.json();
+                
+                if (data.history && data.history.length > 0) {
+                    updateRiskChart(data.history);
+                    
+                    // Focus map on location
+                    const locationsResponse = await fetch('/api/locations');
+                    const locations = await locationsResponse.json();
+                    const location = locations.find(l => l.name === locationName);
+                    
+                    if (location) {
+                        map.setView([location.lat, location.lon], 10);
+                        markers[locationName].openPopup();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading location details:', error);
+            }
+        }
+
+        function updateRiskChart(historyData) {
+            const labels = historyData.map(item => item.date);
+            const probabilities = historyData.map(item => item.probability);
+            
+            riskChart.data.labels = labels;
+            riskChart.data.datasets[0].data = probabilities;
+            riskChart.update();
+        }
+
+        function refreshData() {
+            const refreshBtn = document.querySelector('.refresh-btn');
+            refreshBtn.textContent = '🔄 Refreshing...';
+            refreshBtn.disabled = true;
+            
+            loadDashboardData().finally(() => {
+                refreshBtn.textContent = '🔄 Refresh';
+                refreshBtn.disabled = false;
+            });
+        }
+
+        // Add some CSS for the risk markers
+        const style = document.createElement('style');
+        style.textContent = `
+            .risk-marker {
+                background: none !important;
+                border: none !important;
+                font-size: 16px;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

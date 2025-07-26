@@ -1,0 +1,36 @@
+{
+  "name": "bangladesh-flood-prediction-system",
+  "version": "1.0.0",
+  "description": "AI-powered flood prediction system for Bangladesh with real-time monitoring and alerts",
+  "main": "app.py",
+  "scripts": {
+    "start": "python app.py",
+    "predict": "python automated_predictions.py",
+    "notebook": "jupyter notebook flood_prediction_system.ipynb",
+    "install": "pip install -r requirements.txt"
+  },
+  "keywords": [
+    "flood-prediction",
+    "bangladesh",
+    "machine-learning",
+    "xgboost",
+    "lstm",
+    "weather-api",
+    "disaster-management",
+    "ai",
+    "tensorflow",
+    "flask"
+  ],
+  "author": "Flood Prediction Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/bangladesh-flood-prediction"
+  },
+  "dependencies": {
+    "python": ">=3.8"
+  },
+  "engines": {
+    "python": ">=3.8"
+  }
+}
