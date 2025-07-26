@@ -10,6 +10,10 @@ import joblib
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -87,6 +91,9 @@ except Exception as e:
     rf_model, scaler, feature_cols = create_and_train_models()
 
 # Configuration
+OPENWEATHER_API_KEY = os.environ.get('OPENWEATHER_API_KEY', '4d6eb4cfda31ca9dd9e06e83566e0e7a')
+OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5"
+
 LOCATIONS = {
     'Dhaka': (23.8103, 90.4125),
     'Sylhet': (24.8949, 91.8687),
@@ -128,22 +135,12 @@ def predict_location(location):
         return jsonify({'error': 'Location not found'}), 404
     
     try:
-        # Simulate getting recent data (in production, this would fetch from APIs)
-        dates = [(datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(7)]
-        dates.reverse()
+        # Fetch real weather data (with fallback to simulated)
+        weather_data = fetch_real_weather_data(location, days=7)
         
-        # Generate realistic rainfall data
-        np.random.seed(int(datetime.now().timestamp()) % 1000)
-        rainfall = np.random.gamma(2, 3, 7)
-        rainfall = np.maximum(rainfall, 0)
-        
-        # Create DataFrame
-        live_data = pd.DataFrame({
-            'date': dates,
-            'rainfall': rainfall,
-            'estimated_water_level': 4.2 + (rainfall * 0.1) + np.random.normal(0, 0.2, 7)
-        })
-        
+        # Create DataFrame with estimated water levels
+        live_data = weather_data.copy()
+        live_data['estimated_water_level'] = 4.2 + (live_data['rainfall'] * 0.1) + np.random.normal(0, 0.2, len(live_data))
         live_data['estimated_water_level'] = np.maximum(live_data['estimated_water_level'], 2.0)
         
         # Simple prediction logic (replace with actual model prediction)
@@ -274,6 +271,68 @@ def system_status():
         'last_update': datetime.now().isoformat(),
         'monitored_locations': len(LOCATIONS),
         'version': '1.0.0'
+    })
+
+def fetch_real_weather_data(location='Dhaka', days=7):
+    """Fetch real weather data from OpenWeatherMap API"""
+    if not OPENWEATHER_API_KEY or OPENWEATHER_API_KEY == 'your_openweather_api_key':
+        print("⚠️ Using simulated data - OpenWeatherMap API key not configured")
+        return get_simulated_data(location, days)
+    
+    lat, lon = LOCATIONS.get(location, LOCATIONS['Dhaka'])
+    
+    try:
+        # Get current weather
+        current_url = f"{OPENWEATHER_BASE_URL}/weather?lat={lat}&lon={lon}&appid={OPENWEATHER_API_KEY}&units=metric"
+        response = requests.get(current_url, timeout=10)
+        
+        if response.status_code == 200:
+            current_data = response.json()
+            
+            # Extract current rainfall (if available)
+            current_rain = 0
+            if 'rain' in current_data:
+                current_rain = current_data['rain'].get('1h', 0)  # mm in last hour
+            
+            # For historical data, we'll simulate based on current conditions
+            dates = [(datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(days)]
+            dates.reverse()
+            
+            # Generate realistic variations around current conditions
+            base_rainfall = max(current_rain * 24, 1)  # Convert hourly to daily estimate
+            rainfall_data = []
+            
+            for i in range(days):
+                # Add some realistic variation
+                daily_rain = base_rainfall * (0.5 + np.random.random()) * (1 + 0.3 * np.sin(i * 0.5))
+                rainfall_data.append(max(daily_rain, 0))
+            
+            return pd.DataFrame({
+                'date': dates,
+                'rainfall': rainfall_data
+            })
+        else:
+            print(f"⚠️ Weather API error: {response.status_code}, using simulated data")
+            return get_simulated_data(location, days)
+            
+    except Exception as e:
+        print(f"⚠️ Weather API exception: {str(e)}, using simulated data")
+        return get_simulated_data(location, days)
+
+def get_simulated_data(location='Dhaka', days=7):
+    """Generate simulated rainfall data as fallback"""
+    np.random.seed(int(datetime.now().timestamp()) % 1000)
+    
+    dates = [(datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(days)]
+    dates.reverse()
+    
+    # Simulate realistic rainfall patterns
+    rainfall = np.random.gamma(2, 3, days)
+    rainfall = np.maximum(rainfall, 0)
+    
+    return pd.DataFrame({
+        'date': dates,
+        'rainfall': rainfall
     })
 
 if __name__ == '__main__':

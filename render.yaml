@@ -1,17 +1,11 @@
 services:
   - type: web
-    name: bangladesh-flood-prediction
+    name: ai-flood-prediction-system
     env: python
-    buildCommand: "pip install -r requirements-deploy.txt"
-    startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT"
-    plan: free
+    buildCommand: pip install -r requirements-production.txt
+    startCommand: python app.py
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
-      - key: OPENWEATHER_API_KEY
-        value: your_api_key_here
-      - key: TELEGRAM_BOT_TOKEN  
-        value: your_bot_token_here
-    scaling:
-      minInstances: 1
-      maxInstances: 3
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        value: 10000
