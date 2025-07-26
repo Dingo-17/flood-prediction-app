@@ -10,10 +10,6 @@ import joblib
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -189,7 +185,8 @@ def predict_location(location):
             risk_score = np.clip(np.mean(risk_factors), 0, 1)
             flood_prediction = int(risk_score > 0.6)
         
-        return jsonify({
+        # Create response data
+        response_data = {
             'location': location,
             'timestamp': datetime.now().isoformat(),
             'current_rainfall': float(latest_rainfall),
@@ -204,7 +201,12 @@ def predict_location(location):
                 'rainfall': float(row['rainfall']),
                 'estimated_water_level': float(row['estimated_water_level'])
             } for _, row in live_data.iterrows()]
-        })
+        }
+        
+        # Log this prediction for history
+        log_prediction(location, response_data)
+        
+        return jsonify(response_data)
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -214,8 +216,9 @@ def get_history(location):
     """Get prediction history for a location"""
     log_file = 'logs/flood_predictions.csv'
     
+    # Create sample historical data if no log file exists
     if not os.path.exists(log_file):
-        return jsonify({'history': []})
+        create_sample_history()
     
     try:
         df = pd.read_csv(log_file)
@@ -225,16 +228,90 @@ def get_history(location):
         for _, row in location_history.iterrows():
             history.append({
                 'date': row['date'],
-                'rainfall': round(row['recent_rainfall'], 1),
-                'water_level': round(row['estimated_water_level'], 2),
-                'prediction': int(row.get('ensemble_prediction', 0)),
-                'probability': round(row.get('ensemble_probability', 0), 3)
+                'rainfall': float(row['rainfall']),
+                'water_level': float(row['water_level']),
+                'prediction': int(row['flood_risk']),
+                'probability': float(row['risk_probability'])
             })
         
         return jsonify({'history': history})
         
     except Exception as e:
         return jsonify({'error': str(e), 'history': []}), 500
+
+def create_sample_history():
+    """Create sample historical prediction data for demonstration"""
+    log_file = 'logs/flood_predictions.csv'
+    
+    # Generate 30 days of sample data
+    sample_data = []
+    base_date = datetime.now() - timedelta(days=30)
+    
+    for i in range(30):
+        current_date = base_date + timedelta(days=i)
+        
+        for location in LOCATIONS.keys():
+            # Generate realistic sample data
+            np.random.seed(i + hash(location) % 1000)
+            
+            rainfall = max(0, np.random.gamma(2, 3) + np.random.normal(0, 2))
+            water_level = 4.0 + (rainfall * 0.08) + np.random.normal(0, 0.3)
+            water_level = max(water_level, 2.0)
+            
+            threshold = FLOOD_THRESHOLDS.get(location, 5.5)
+            
+            # Simple risk calculation
+            risk_factors = [
+                water_level / threshold,
+                rainfall / 20,
+                min(rainfall / 10, 1.0)
+            ]
+            risk_prob = np.clip(np.mean(risk_factors), 0, 1)
+            flood_risk = 1 if risk_prob > 0.6 else 0
+            
+            sample_data.append({
+                'timestamp': current_date.strftime('%Y-%m-%d %H:%M:%S'),
+                'location': location,
+                'date': current_date.strftime('%Y-%m-%d'),
+                'rainfall': round(rainfall, 1),
+                'water_level': round(water_level, 2),
+                'flood_threshold': threshold,
+                'flood_risk': flood_risk,
+                'risk_probability': round(risk_prob, 3),
+                'confidence': round(max(risk_prob, 1-risk_prob), 3),
+                'status': 'HIGH RISK' if flood_risk == 1 else 'LOW RISK'
+            })
+    
+    # Save to CSV
+    os.makedirs('logs', exist_ok=True)
+    df = pd.DataFrame(sample_data)
+    df.to_csv(log_file, index=False)
+    print(f"📊 Created sample historical data: {len(sample_data)} records")
+
+def log_prediction(location, prediction_data):
+    """Log a prediction to the history file"""
+    log_file = 'logs/flood_predictions.csv'
+    
+    log_entry = {
+        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'location': location,
+        'date': datetime.now().strftime('%Y-%m-%d'),
+        'rainfall': prediction_data.get('current_rainfall', 0),
+        'water_level': prediction_data.get('current_water_level', 0),
+        'flood_threshold': prediction_data.get('flood_threshold', 5.5),
+        'flood_risk': prediction_data.get('flood_risk', 0),
+        'risk_probability': prediction_data.get('risk_probability', 0),
+        'confidence': prediction_data.get('confidence', 0),
+        'status': prediction_data.get('status', 'LOW RISK')
+    }
+    
+    log_df = pd.DataFrame([log_entry])
+    
+    if os.path.exists(log_file):
+        log_df.to_csv(log_file, mode='a', header=False, index=False)
+    else:
+        os.makedirs('logs', exist_ok=True)
+        log_df.to_csv(log_file, mode='w', header=True, index=False)
 
 @app.route('/api/alerts')
 def get_alerts():
