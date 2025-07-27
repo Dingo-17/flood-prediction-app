@@ -2,7 +2,7 @@ services:
   - type: web
     name: ai-flood-prediction-system
     env: python
-    buildCommand: pip install -r requirements-production.txt
+    buildCommand: ./build.sh
     startCommand: python app.py
     envVars:
       - key: FLASK_ENV
