@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bangladesh Flood Prediction Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background: linear-gradient(135deg, #031D40 0%, #0F50A6 50%, #63BBF2 100%);
+            min-height: 100vh;
+            color: #0D0D0D;
+        }
+
+        .header {
+            background: rgba(242, 242, 242, 0.95);
+            padding: 2rem 3rem;
+            box-shadow: 0 8px 32px rgba(3, 29, 64, 0.1);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(99, 187, 242, 0.2);
+            animation: slideDown 0.6s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .header h1 {
+            color: #031D40;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            color: #113240;
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .status-bar {
+            background: rgba(242, 242, 242, 0.95);
+            padding: 1.5rem 2rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 12px 40px rgba(3, 29, 64, 0.08);
+            border: 1px solid rgba(99, 187, 242, 0.15);
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .status-item {
+            text-align: center;
+        }
+
+        .status-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #031D40;
+            margin-bottom: 0.3rem;
+        }
+
+        .status-label {
+            color: #113240;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: rgba(242, 242, 242, 0.95);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 16px 60px rgba(3, 29, 64, 0.12);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(99, 187, 242, 0.15);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeInUp 1s ease-out both;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 24px 80px rgba(3, 29, 64, 0.18);
+            border-color: rgba(99, 187, 242, 0.3);
+        }
+
+        .card:nth-child(1) { animation-delay: 0.3s; }
+        .card:nth-child(2) { animation-delay: 0.4s; }
+        .card:nth-child(3) { animation-delay: 0.5s; }
+        .card:nth-child(4) { animation-delay: 0.6s; }
+
+        .card h3 {
+            color: #031D40;
+            margin-bottom: 1.5rem;
+            font-size: 1.4rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        .map-container {
+            height: 450px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid rgba(99, 187, 242, 0.2);
+            box-shadow: inset 0 2px 8px rgba(3, 29, 64, 0.05);
+        }
+
+        .location-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .location-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .location-list::-webkit-scrollbar-track {
+            background: rgba(99, 187, 242, 0.1);
+            border-radius: 4px;
+        }
+
+        .location-list::-webkit-scrollbar-thumb {
+            background: rgba(15, 80, 166, 0.4);
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+
+        .location-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(15, 80, 166, 0.6);
+        }
+
+        .location-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.2rem;
+            border-bottom: 1px solid rgba(99, 187, 242, 0.1);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            margin-right: 10px;
+        }
+
+        .location-item:hover {
+            background: linear-gradient(135deg, rgba(99, 187, 242, 0.08) 0%, rgba(15, 80, 166, 0.05) 100%);
+            border-color: rgba(99, 187, 242, 0.2);
+            box-shadow: 0 2px 8px rgba(99, 187, 242, 0.1);
+        }
+
+        .location-item:active {
+            background-color: rgba(99, 187, 242, 0.1);
+            transform: scale(0.98);
+            transition: all 0.1s ease;
+        }
+
+        .location-info h4 {
+            color: #031D40;
+            margin-bottom: 0.4rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .location-details {
+            color: #113240;
+            font-size: 0.9rem;
+            font-weight: 400;
+        }
+
+        .risk-badge {
+            padding: 0.6rem 1.2rem;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .risk-high {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .risk-low {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+        }
+
+        .risk-medium {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+        }
+
+        .risk-critical {
+            background: linear-gradient(135deg, #8B0000 0%, #B22222 100%);
+            color: white;
+            animation: criticalPulse 2s infinite;
+        }
+
+        .risk-minimal {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+        }
+
+        @keyframes criticalPulse {
+            0%, 100% { box-shadow: 0 4px 12px rgba(139, 0, 0, 0.4); }
+            50% { box-shadow: 0 6px 20px rgba(139, 0, 0, 0.7); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .chart-container {
+            height: 300px;
+            margin-top: 1rem;
+        }
+
+        .alerts-container {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .flood-risk-profile {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .flood-risk-item {
+            background: linear-gradient(135deg, rgba(99, 187, 242, 0.05) 0%, rgba(15, 80, 166, 0.02) 100%);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            border-left: 4px solid;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .flood-risk-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 187, 242, 0.15);
+        }
+
+        .flood-risk-item.high {
+            border-left-color: #e74c3c;
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.08) 0%, rgba(192, 57, 43, 0.03) 100%);
+        }
+
+        .flood-risk-item.moderate {
+            border-left-color: #f39c12;
+            background: linear-gradient(135deg, rgba(243, 156, 18, 0.08) 0%, rgba(230, 126, 34, 0.03) 100%);
+        }
+
+        .flood-risk-item.low {
+            border-left-color: #27ae60;
+            background: linear-gradient(135deg, rgba(39, 174, 96, 0.08) 0%, rgba(34, 153, 84, 0.03) 100%);
+        }
+
+        .flood-type-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .flood-type-name {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #031D40;
+            text-transform: capitalize;
+        }
+
+        .flood-risk-percentage {
+            font-weight: 700;
+            font-size: 0.9rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            color: white;
+        }
+
+        .flood-risk-percentage.high {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .flood-risk-percentage.moderate {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+
+        .flood-risk-percentage.low {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        }
+
+        .flood-description {
+            font-size: 0.85rem;
+            color: #113240;
+            margin-bottom: 0.4rem;
+            line-height: 1.4;
+        }
+
+        .flood-damage {
+            font-size: 0.8rem;
+            color: #0F50A6;
+            font-style: italic;
+            opacity: 0.9;
+        }
+
+        .alert-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem;
+            border-left: 4px solid #e74c3c;
+            background-color: #fdf2f2;
+            margin-bottom: 0.5rem;
+            border-radius: 5px;
+        }
+
+        .alert-warning {
+            border-left-color: #e74c3c;
+            background-color: #fdf2f2;
+        }
+
+        .alert-info {
+            border-left-color: #3498db;
+            background-color: #f4f8fd;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #113240;
+            font-weight: 500;
+        }
+
+        .loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(15, 80, 166, 0.3);
+            border-top: 2px solid #0F50A6;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 10px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #0F50A6 0%, #63BBF2 100%);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.6rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 6px 20px rgba(15, 80, 166, 0.3);
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(15, 80, 166, 0.4);
+        }
+
+        .refresh-btn:active {
+            transform: translateY(0);
+        }
+
+        .flood-degree {
+            font-size: 0.85rem;
+            color: #031D40;
+            margin-bottom: 0.3rem;
+            font-weight: 500;
+        }
+
+        .flood-depth {
+            font-size: 0.85rem;
+            color: #0F50A6;
+            margin-bottom: 0.4rem;
+            font-weight: 500;
+        }
+
+        /* Mobile-first responsive design */
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem 1.5rem;
+                text-align: center;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+                margin-bottom: 0.3rem;
+            }
+
+            .header p {
+                font-size: 0.9rem;
+            }
+
+            .status-bar {
+                flex-direction: column;
+                gap: 0.5rem;
+                padding: 1rem 1.5rem;
+            }
+
+            .status-item {
+                min-width: auto;
+                flex: 1;
+                text-align: center;
+                padding: 0.8rem 1rem;
+            }
+
+            .container {
+                padding: 1rem;
+                gap: 1rem;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .card {
+                padding: 1rem;
+                margin-bottom: 1rem;
+            }
+
+            .card h3 {
+                font-size: 1.1rem;
+                margin-bottom: 0.8rem;
+            }
+
+            #map {
+                height: 250px;
+                border-radius: 8px;
+            }
+
+            .locations-grid {
+                grid-template-columns: 1fr;
+                gap: 0.8rem;
+            }
+
+            .location-item {
+                padding: 0.8rem;
+                font-size: 0.9rem;
+            }
+
+            .location-name {
+                font-size: 0.95rem;
+            }
+
+            .location-risk {
+                font-size: 0.85rem;
+                padding: 0.3rem 0.8rem;
+            }
+
+            .location-details {
+                font-size: 0.8rem;
+                margin-top: 0.3rem;
+            }
+
+            .flood-risk-profile {
+                max-height: 300px;
+            }
+
+            .flood-risk-item {
+                padding: 0.8rem;
+                margin-bottom: 0.6rem;
+            }
+
+            .flood-type-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.3rem;
+                margin-bottom: 0.4rem;
+            }
+
+            .flood-type-name {
+                font-size: 0.95rem;
+            }
+
+            .flood-risk-percentage {
+                font-size: 0.85rem;
+                align-self: flex-end;
+                margin-top: -1.5rem;
+            }
+
+            .flood-description,
+            .flood-degree,
+            .flood-depth,
+            .flood-damage {
+                font-size: 0.8rem;
+                line-height: 1.3;
+                margin-bottom: 0.3rem;
+            }
+
+            .chart-container {
+                height: 200px;
+            }
+
+            .alerts-container {
+                max-height: 200px;
+            }
+
+            .alert-item {
+                padding: 0.8rem;
+                margin-bottom: 0.6rem;
+            }
+
+            .alert-title {
+                font-size: 0.9rem;
+            }
+
+            .alert-time {
+                font-size: 0.75rem;
+            }
+
+            .alert-description {
+                font-size: 0.8rem;
+                margin-top: 0.3rem;
+            }
+
+            /* Better touch targets for mobile */
+            .location-item,
+            .alert-item,
+            .flood-risk-item {
+                min-height: 44px;
+                cursor: pointer;
+                -webkit-tap-highlight-color: rgba(99, 187, 242, 0.2);
+            }
+
+            /* Improve text readability on mobile */
+            body {
+                font-size: 14px;
+                line-height: 1.4;
+            }
+
+            /* Better spacing for mobile scrolling */
+            .container > .grid:last-child {
+                margin-bottom: 2rem;
+            }
+
+            /* Smooth scrolling for mobile */
+            .flood-risk-profile,
+            .alerts-container {
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth;
+            }
+
+            /* Better touch targets */
+            .location-item:active,
+            .flood-risk-item:active,
+            .alert-item:active {
+                background-color: rgba(99, 187, 242, 0.1);
+                transform: scale(0.98);
+                transition: all 0.1s ease;
+            }
+
+            /* Prevent text selection on touch elements */
+            .location-item,
+            .flood-risk-item,
+            .alert-item {
+                -webkit-user-select: none;
+                user-select: none;
+                -webkit-touch-callout: none;
+            }
+
+            /* Improve map controls for mobile */
+            .leaflet-control-zoom {
+                margin: 8px !important;
+            }
+
+            .leaflet-control-zoom a {
+                width: 32px !important;
+                height: 32px !important;
+                line-height: 32px !important;
+                font-size: 16px !important;
+            }
+
+            /* Better popup styling for mobile */
+            .leaflet-popup-content-wrapper {
+                border-radius: 8px !important;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+            }
+
+            .leaflet-popup-content {
+                margin: 8px 10px !important;
+                font-size: 12px !important;
+                line-height: 1.3 !important;
+            }
+
+            /* Optimize status bar for mobile */
+            .status-item {
+                border-radius: 8px;
+                background: rgba(242, 242, 242, 0.9);
+            }
+
+            /* Better card spacing on mobile */
+            .card:last-child {
+                margin-bottom: 2rem;
+            }
+        }
+
+        /* Very small screens (small phones) */
+        @media (max-width: 360px) {
+            .header h1 {
+                font-size: 1.3rem;
+            }
+
+            .status-item {
+                padding: 0.5rem;
+                font-size: 0.75rem;
+            }
+
+            .card {
+                padding: 0.6rem;
+            }
+
+            #map {
+                height: 200px;
+            }
+
+            .flood-risk-profile {
+                max-height: 200px;
+            }
+        }
+
+        /* Continue with existing styles */
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Bangladesh Flood Prediction Dashboard</h1>
+        <p>Real-time AI-powered flood monitoring and prediction system</p>
+    </div>
+
+    <div class="dashboard">
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-value" id="systemStatus">Operational</div>
+                <div class="status-label">System Status</div>
+            </div>
+            <div class="status-item">
+                <div class="status-value" id="locationsCount">5</div>
+                <div class="status-label">Monitored Locations</div>
+            </div>
+            <div class="status-item">
+                <div class="status-value" id="lastUpdate">Loading...</div>
+                <div class="status-label">Last Update</div>
+            </div>
+            <div class="status-item">
+                <button class="refresh-btn" onclick="refreshData()">Refresh</button>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Bangladesh Monitoring Map</h3>
+                <div id="map" class="map-container"></div>
+            </div>
+
+            <div class="card">
+                <h3>Location Status</h3>
+                <div id="locationsList" class="location-list">
+                    <div class="loading">Loading location data...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Detailed Flood Risk Profile</h3>
+                <div id="floodRiskProfile" class="flood-risk-profile">
+                    <div class="loading">Select a location to view detailed flood risk breakdown...</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Risk Trends</h3>
+                <div class="chart-container">
+                    <canvas id="riskChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Recent Alerts</h3>
+                <div id="alertsList" class="alerts-container">
+                    <div class="loading">Loading alerts...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app-debug.js"></script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .test-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px 0;
+            cursor: pointer;
+            border-radius: 5px;
+            display: block;
+            width: 100%;
+        }
+        .result {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .success { border-color: #28a745; background-color: #d4edda; }
+        .error { border-color: #dc3545; background-color: #f8d7da; }
+    </style>
+</head>
+<body>
+    <h1>Simple API Test</h1>
+    <p>Testing connection to: <strong>http://192.168.1.164:10000</strong></p>
+    
+    <button class="test-button" onclick="testLocations()">Test /api/locations</button>
+    <div id="locations-result" class="result"></div>
+    
+    <button class="test-button" onclick="testStatus()">Test /api/status</button>
+    <div id="status-result" class="result"></div>
+    
+    <button class="test-button" onclick="testAlerts()">Test /api/alerts</button>
+    <div id="alerts-result" class="result"></div>
+    
+    <button class="test-button" onclick="testPredictDhaka()">Test /api/predict/Dhaka</button>
+    <div id="predict-result" class="result"></div>
+    
+    <script>
+        const API_BASE = 'http://192.168.1.164:10000';
+        
+        function updateResult(elementId, content, isError = false) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = content;
+            element.className = 'result ' + (isError ? 'error' : 'success');
+        }
+        
+        async function testLocations() {
+            updateResult('locations-result', 'Testing...', false);
+            try {
+                console.log('Fetching locations from:', API_BASE + '/api/locations');
+                const response = await fetch(API_BASE + '/api/locations');
+                console.log('Response status:', response.status);
+                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Locations data:', data);
+                updateResult('locations-result', `SUCCESS! Got ${data.length} locations:\n${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                console.error('Locations error:', error);
+                updateResult('locations-result', `ERROR: ${error.message}\nFull error: ${error}`, true);
+            }
+        }
+        
+        async function testStatus() {
+            updateResult('status-result', 'Testing...', false);
+            try {
+                console.log('Fetching status from:', API_BASE + '/api/status');
+                const response = await fetch(API_BASE + '/api/status');
+                console.log('Response status:', response.status);
+                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Status data:', data);
+                updateResult('status-result', `SUCCESS! Status:\n${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                console.error('Status error:', error);
+                updateResult('status-result', `ERROR: ${error.message}\nFull error: ${error}`, true);
+            }
+        }
+        
+        async function testAlerts() {
+            updateResult('alerts-result', 'Testing...', false);
+            try {
+                console.log('Fetching alerts from:', API_BASE + '/api/alerts');
+                const response = await fetch(API_BASE + '/api/alerts');
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Alerts data:', data);
+                updateResult('alerts-result', `SUCCESS! Got ${data.length || 'unknown'} alerts:\n${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                console.error('Alerts error:', error);
+                updateResult('alerts-result', `ERROR: ${error.message}`, true);
+            }
+        }
+        
+        async function testPredictDhaka() {  
+            updateResult('predict-result', 'Testing...', false);
+            try {
+                console.log('Fetching prediction from:', API_BASE + '/api/predict/Dhaka');
+                const response = await fetch(API_BASE + '/api/predict/Dhaka');
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Predict data:', data);
+                updateResult('predict-result', `SUCCESS! Prediction for Dhaka:\n${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                console.error('Predict error:', error);
+                updateResult('predict-result', `ERROR: ${error.message}`, true);
+            }
+        }
+        
+        // Auto-test on load
+        window.addEventListener('load', function() {
+            console.log('Page loaded, starting auto-tests...');
+            setTimeout(testLocations, 1000);
+        });
+    </script>
+</body>
+</html>

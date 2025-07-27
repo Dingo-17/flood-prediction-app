@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flood API Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+        .test-section {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success {
+            color: green;
+            background: #e8f5e8;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .error {
+            color: red;
+            background: #ffe8e8;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .loading {
+            color: blue;
+            background: #e8f0ff;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌊 Flood Prediction API Debug Test</h1>
+    
+    <div class="test-section">
+        <h3>Network Information</h3>
+        <p><strong>Test URL:</strong> http://192.168.1.164:10000</p>
+        <p><strong>User Agent:</strong> <span id="userAgent"></span></p>
+        <p><strong>Online Status:</strong> <span id="onlineStatus"></span></p>
+    </div>
+
+    <div class="test-section">
+        <h3>Quick Tests</h3>
+        <button onclick="testBasicFetch()">Test Basic Fetch</button>
+        <button onclick="testStatus()">Test /api/status</button>
+        <button onclick="testLocations()">Test /api/locations</button>
+        <button onclick="testAll()">Test All APIs</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Test Results</h3>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://192.168.1.164:10000';
+        let resultCounter = 0;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('userAgent').textContent = navigator.userAgent;
+            document.getElementById('onlineStatus').textContent = navigator.onLine ? 'Online' : 'Offline';
+            
+            // Auto-run basic test
+            setTimeout(testBasicFetch, 1000);
+        });
+
+        function addResult(title, content, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = `
+                <strong>[${++resultCounter}] ${title}</strong><br>
+                <pre>${content}</pre>
+                <small>Time: ${new Date().toLocaleTimeString()}</small>
+            `;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            resultCounter = 0;
+        }
+
+        async function testBasicFetch() {
+            addResult('Basic Fetch Test', 'Starting basic connectivity test...', 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/status`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors'
+                });
+                
+                addResult('Basic Fetch - Response', `
+Status: ${response.status} ${response.statusText}
+OK: ${response.ok}
+Type: ${response.type}
+URL: ${response.url}
+Headers: ${JSON.stringify([...response.headers.entries()], null, 2)}
+                `, response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('Basic Fetch - Data', JSON.stringify(data, null, 2), 'success');
+                } else {
+                    const text = await response.text();
+                    addResult('Basic Fetch - Error Body', text, 'error');
+                }
+                
+            } catch (error) {
+                addResult('Basic Fetch - Exception', `
+Error Type: ${error.constructor.name}
+Message: ${error.message}
+Stack: ${error.stack}
+                `, 'error');
+            }
+        }
+
+        async function testStatus() {
+            addResult('Status API Test', 'Testing /api/status endpoint...', 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/status`);
+                const data = await response.json();
+                addResult('Status API - Success', JSON.stringify(data, null, 2), 'success');
+            } catch (error) {
+                addResult('Status API - Error', error.message, 'error');
+            }
+        }
+
+        async function testLocations() {
+            addResult('Locations API Test', 'Testing /api/locations endpoint...', 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/locations`);
+                const data = await response.json();
+                addResult('Locations API - Success', JSON.stringify(data, null, 2), 'success');
+            } catch (error) {
+                addResult('Locations API - Error', error.message, 'error');
+            }
+        }
+
+        async function testAll() {
+            addResult('Full Test Suite', 'Running all API tests...', 'loading');
+            
+            const tests = [
+                { name: 'Status', url: '/api/status' },
+                { name: 'Locations', url: '/api/locations' },
+                { name: 'Alerts', url: '/api/alerts' },
+                { name: 'Dhaka Prediction', url: '/api/predict/Dhaka' }
+            ];
+
+            for (const test of tests) {
+                try {
+                    const response = await fetch(`${API_BASE}${test.url}`);
+                    const data = await response.json();
+                    addResult(`${test.name} Test`, `✅ Success: ${JSON.stringify(data).substring(0, 200)}...`, 'success');
+                } catch (error) {
+                    addResult(`${test.name} Test`, `❌ Failed: ${error.message}`, 'error');
+                }
+                
+                // Small delay between tests
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            addResult('Full Test Suite', 'All tests completed', 'success');
+        }
+
+        // Test fetch capabilities
+        console.log('Fetch available:', typeof fetch !== 'undefined');
+        console.log('Promise available:', typeof Promise !== 'undefined');
+        console.log('Capacitor available:', typeof window.Capacitor !== 'undefined');
+        
+        // Log any network errors
+        window.addEventListener('error', function(e) {
+            addResult('Global Error', e.message + ' at ' + e.filename + ':' + e.lineno, 'error');
+        });
+        
+        window.addEventListener('unhandledrejection', function(e) {
+            addResult('Unhandled Promise Rejection', e.reason, 'error');
+        });
+    </script>
+</body>
+</html>

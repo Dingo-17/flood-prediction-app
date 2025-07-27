@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flood API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        button { margin: 5px; padding: 10px 15px; }
+    </style>
+</head>
+<body>
+    <h1>🌊 Flood API Test</h1>
+    <p>Testing API connectivity to: <strong>http://192.168.1.164:10000</strong></p>
+    
+    <button onclick="testStatus()">Test Status API</button>
+    <button onclick="testLocations()">Test Locations API</button>
+    <button onclick="testPrediction()">Test Prediction API</button>
+    <button onclick="clearResults()">Clear Results</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const BASE_URL = 'http://192.168.1.164:10000';
+        
+        function addResult(title, success, data) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-result ${success ? 'success' : 'error'}`;
+            div.innerHTML = `
+                <h3>${success ? '✅' : '❌'} ${title}</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            results.appendChild(div);
+        }
+        
+        async function testStatus() {
+            try {
+                console.log('Testing status API...');
+                const response = await fetch(`${BASE_URL}/api/status`);
+                const data = await response.json();
+                addResult('Status API', response.ok, data);
+            } catch (error) {
+                addResult('Status API', false, { error: error.message });
+            }
+        }
+        
+        async function testLocations() {
+            try {
+                console.log('Testing locations API...');
+                const response = await fetch(`${BASE_URL}/api/locations`);
+                const data = await response.json();
+                addResult('Locations API', response.ok, data);
+            } catch (error) {
+                addResult('Locations API', false, { error: error.message });
+            }
+        }
+        
+        async function testPrediction() {
+            try {
+                console.log('Testing prediction API...');
+                const response = await fetch(`${BASE_URL}/api/predict/Dhaka`);
+                const data = await response.json();
+                addResult('Prediction API (Dhaka)', response.ok, data);
+            } catch (error) {
+                addResult('Prediction API', false, { error: error.message });
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        // Auto-test on load
+        window.onload = function() {
+            setTimeout(testStatus, 500);
+            setTimeout(testLocations, 1000);
+            setTimeout(testPrediction, 1500);
+        };
+    </script>
+</body>
+</html>

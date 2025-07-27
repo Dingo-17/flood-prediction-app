@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>Flood Prediction API Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function testAPI() {
+            const results = document.getElementById('results');
+            const baseURL = 'http://localhost:10000';
+            
+            try {
+                // Test status endpoint
+                console.log('Testing /api/status...');
+                const statusResponse = await fetch(`${baseURL}/api/status`);
+                const statusData = await statusResponse.json();
+                results.innerHTML += `<p><strong>Status:</strong> ${JSON.stringify(statusData)}</p>`;
+                
+                // Test locations endpoint
+                console.log('Testing /api/locations...');
+                const locationsResponse = await fetch(`${baseURL}/api/locations`);
+                const locationsData = await locationsResponse.json();
+                results.innerHTML += `<p><strong>Locations:</strong> ${JSON.stringify(locationsData)}</p>`;
+                
+                // Test prediction for first location
+                if (locationsData && locationsData.length > 0) {
+                    const firstLocation = locationsData[0].name;
+                    console.log(`Testing /api/predict/${firstLocation}...`);
+                    const predictResponse = await fetch(`${baseURL}/api/predict/${firstLocation}`);
+                    const predictData = await predictResponse.json();
+                    results.innerHTML += `<p><strong>Prediction ${firstLocation}:</strong> ${JSON.stringify(predictData, null, 2)}</p>`;
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<p style="color: red;"><strong>Error:</strong> ${error.message}</p>`;
+                console.error('API Test Error:', error);
+            }
+        }
+        
+        // Run test when page loads
+        testAPI();
+    </script>
+</body>
+</html>

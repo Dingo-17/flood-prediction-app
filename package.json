@@ -1,0 +1,28 @@
+{
+  "name": "flood-prediction-ios",
+  "version": "1.0.0",
+  "description": "Flood Prediction System - iOS App using Capacitor",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'Building web assets...'",
+    "ionic:build": "npm run build",
+    "ionic:cap:run:ios": "ionic cap run ios",
+    "ionic:cap:build:ios": "ionic cap build ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^5.0.0",
+    "@capacitor/cli": "^5.0.0",
+    "@capacitor/ios": "^5.0.0",
+    "@capacitor/app": "^5.0.0",
+    "@capacitor/haptics": "^5.0.0",
+    "@capacitor/keyboard": "^5.0.0",
+    "@capacitor/status-bar": "^5.0.0",
+    "@capacitor/geolocation": "^5.0.0",
+    "@capacitor/local-notifications": "^5.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^5.0.0"
+  },
+  "author": "Your Name",
+  "license": "MIT"
+}
