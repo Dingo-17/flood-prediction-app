@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌊 Bangladesh Flood Prediction Dashboard</title>
+    <title>Bangladesh Flood Prediction Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
@@ -15,28 +16,44 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Open Sans', sans-serif;
+            background: linear-gradient(135deg, #031D40 0%, #0F50A6 50%, #63BBF2 100%);
             min-height: 100vh;
-            color: #333;
+            color: #0D0D0D;
         }
 
         .header {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 1rem 2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
+            background: rgba(242, 242, 242, 0.95);
+            padding: 2rem 3rem;
+            box-shadow: 0 8px 32px rgba(3, 29, 64, 0.1);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(99, 187, 242, 0.2);
+            animation: slideDown 0.6s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
 
         .header h1 {
-            color: #2c3e50;
-            font-size: 2rem;
+            color: #031D40;
+            font-size: 2.5rem;
             margin-bottom: 0.5rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
         }
 
         .header p {
-            color: #7f8c8d;
+            color: #113240;
             font-size: 1.1rem;
+            font-weight: 400;
         }
 
         .dashboard {
@@ -46,14 +63,28 @@
         }
 
         .status-bar {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 1rem;
-            border-radius: 10px;
+            background: rgba(242, 242, 242, 0.95);
+            padding: 1.5rem 2rem;
+            border-radius: 20px;
             margin-bottom: 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 12px 40px rgba(3, 29, 64, 0.08);
+            border: 1px solid rgba(99, 187, 242, 0.15);
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
 
         .status-item {
@@ -61,14 +92,18 @@
         }
 
         .status-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #2c3e50;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #031D40;
+            margin-bottom: 0.3rem;
         }
 
         .status-label {
-            color: #7f8c8d;
+            color: #113240;
             font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .grid {
@@ -79,74 +114,147 @@
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
+            background: rgba(242, 242, 242, 0.95);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 16px 60px rgba(3, 29, 64, 0.12);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(99, 187, 242, 0.15);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeInUp 1s ease-out both;
         }
 
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 24px 80px rgba(3, 29, 64, 0.18);
+            border-color: rgba(99, 187, 242, 0.3);
+        }
+
+        .card:nth-child(1) { animation-delay: 0.3s; }
+        .card:nth-child(2) { animation-delay: 0.4s; }
+        .card:nth-child(3) { animation-delay: 0.5s; }
+        .card:nth-child(4) { animation-delay: 0.6s; }
+
         .card h3 {
-            color: #2c3e50;
-            margin-bottom: 1rem;
-            font-size: 1.3rem;
+            color: #031D40;
+            margin-bottom: 1.5rem;
+            font-size: 1.4rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
         }
 
         .map-container {
-            height: 400px;
-            border-radius: 10px;
+            height: 450px;
+            border-radius: 16px;
             overflow: hidden;
+            border: 2px solid rgba(99, 187, 242, 0.2);
+            box-shadow: inset 0 2px 8px rgba(3, 29, 64, 0.05);
         }
 
         .location-list {
-            max-height: 350px;
+            max-height: 400px;
             overflow-y: auto;
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .location-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .location-list::-webkit-scrollbar-track {
+            background: rgba(99, 187, 242, 0.1);
+            border-radius: 4px;
+        }
+
+        .location-list::-webkit-scrollbar-thumb {
+            background: rgba(15, 80, 166, 0.4);
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+
+        .location-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(15, 80, 166, 0.6);
         }
 
         .location-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem;
-            border-bottom: 1px solid #ecf0f1;
+            padding: 1.2rem;
+            border-bottom: 1px solid rgba(99, 187, 242, 0.1);
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.2s ease;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            margin-right: 10px;
         }
 
         .location-item:hover {
-            background-color: #f8f9fa;
+            background: linear-gradient(135deg, rgba(99, 187, 242, 0.08) 0%, rgba(15, 80, 166, 0.05) 100%);
+            border-color: rgba(99, 187, 242, 0.2);
+            box-shadow: 0 2px 8px rgba(99, 187, 242, 0.1);
         }
 
         .location-info h4 {
-            color: #2c3e50;
-            margin-bottom: 0.3rem;
+            color: #031D40;
+            margin-bottom: 0.4rem;
+            font-weight: 600;
+            font-size: 1.1rem;
         }
 
         .location-details {
-            color: #7f8c8d;
+            color: #113240;
             font-size: 0.9rem;
+            font-weight: 400;
         }
 
         .risk-badge {
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-weight: bold;
+            padding: 0.6rem 1.2rem;
+            border-radius: 25px;
+            font-weight: 600;
             font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
         }
 
         .risk-high {
-            background-color: #e74c3c;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
             color: white;
         }
 
         .risk-low {
-            background-color: #27ae60;
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
             color: white;
         }
 
         .risk-medium {
-            background-color: #f39c12;
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
             color: white;
+        }
+
+        .risk-critical {
+            background: linear-gradient(135deg, #8B0000 0%, #B22222 100%);
+            color: white;
+            animation: criticalPulse 2s infinite;
+        }
+
+        .risk-minimal {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+        }
+
+        @keyframes criticalPulse {
+            0%, 100% { box-shadow: 0 4px 12px rgba(139, 0, 0, 0.4); }
+            50% { box-shadow: 0 6px 20px rgba(139, 0, 0, 0.7); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
         }
 
         .chart-container {
@@ -182,23 +290,50 @@
 
         .loading {
             text-align: center;
-            padding: 2rem;
-            color: #7f8c8d;
+            padding: 3rem;
+            color: #113240;
+            font-weight: 500;
+        }
+
+        .loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(15, 80, 166, 0.3);
+            border-top: 2px solid #0F50A6;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 10px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .refresh-btn {
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #0F50A6 0%, #63BBF2 100%);
             color: white;
             border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 5px;
+            padding: 0.8rem 1.6rem;
+            border-radius: 25px;
             cursor: pointer;
             font-size: 0.9rem;
-            transition: transform 0.2s;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 6px 20px rgba(15, 80, 166, 0.3);
         }
 
         .refresh-btn:hover {
             transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(15, 80, 166, 0.4);
+        }
+
+        .refresh-btn:active {
+            transform: translateY(0);
         }
 
         @media (max-width: 768px) {
@@ -215,14 +350,14 @@
 </head>
 <body>
     <div class="header">
-        <h1>🌊 Bangladesh Flood Prediction Dashboard</h1>
+        <h1>Bangladesh Flood Prediction Dashboard</h1>
         <p>Real-time AI-powered flood monitoring and prediction system</p>
     </div>
 
     <div class="dashboard">
         <div class="status-bar">
             <div class="status-item">
-                <div class="status-value" id="systemStatus">🟢 Operational</div>
+                <div class="status-value" id="systemStatus">Operational</div>
                 <div class="status-label">System Status</div>
             </div>
             <div class="status-item">
@@ -234,18 +369,18 @@
                 <div class="status-label">Last Update</div>
             </div>
             <div class="status-item">
-                <button class="refresh-btn" onclick="refreshData()">🔄 Refresh</button>
+                <button class="refresh-btn" onclick="refreshData()">Refresh</button>
             </div>
         </div>
 
         <div class="grid">
             <div class="card">
-                <h3>📍 Bangladesh Monitoring Map</h3>
+                <h3>Bangladesh Monitoring Map</h3>
                 <div id="map" class="map-container"></div>
             </div>
 
             <div class="card">
-                <h3>🏙️ Location Status</h3>
+                <h3>Location Status</h3>
                 <div id="locationsList" class="location-list">
                     <div class="loading">Loading location data...</div>
                 </div>
@@ -254,14 +389,14 @@
 
         <div class="grid">
             <div class="card">
-                <h3>📊 Risk Trends</h3>
+                <h3>Risk Trends</h3>
                 <div class="chart-container">
                     <canvas id="riskChart"></canvas>
                 </div>
             </div>
 
             <div class="card">
-                <h3>🚨 Recent Alerts</h3>
+                <h3>Recent Alerts</h3>
                 <div id="alertsList" class="alerts-container">
                     <div class="loading">Loading alerts...</div>
                 </div>
@@ -293,6 +428,84 @@
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors'
             }).addTo(map);
+            
+            // Add Bangladesh boundary rectangle
+            const bangladeshBounds = [
+                [20.5, 88.0], // Southwest corner
+                [26.7, 92.8]  // Northeast corner
+            ];
+            
+            L.rectangle(bangladeshBounds, {
+                color: '#0F50A6',
+                weight: 2,
+                opacity: 0.6,
+                fillColor: 'transparent',
+                dashArray: '5, 5',
+                interactive: false  // This prevents the rectangle from capturing click events
+            }).addTo(map);
+            
+            // Add click handler for coordinate-based predictions
+            map.on('click', async function(e) {
+                const lat = e.latlng.lat;
+                const lon = e.latlng.lng;
+                
+                // Validate coordinates are within Bangladesh bounds
+                if (lat < 20.5 || lat > 26.7 || lon < 88.0 || lon > 92.8) {
+                    L.popup()
+                        .setLatLng(e.latlng)
+                        .setContent(`
+                            <div style="text-align: center; padding: 10px; font-family: 'Open Sans', sans-serif;">
+                                <div style="color: #e74c3c; font-weight: 600; margin-bottom: 5px;">⚠️ Location Outside Bangladesh</div>
+                                <div style="font-size: 12px; color: #666;">
+                                    Flood predictions are only available within Bangladesh boundaries.
+                                </div>
+                            </div>
+                        `)
+                        .openOn(map);
+                    return;
+                }
+                
+                // Show loading popup
+                const loadingPopup = L.popup()
+                    .setLatLng(e.latlng)
+                    .setContent('<div style="text-align: center; padding: 10px;">Loading prediction...</div>')
+                    .openOn(map);
+                
+                try {
+                    const response = await fetch(`/api/predict/coordinates/${lat}/${lon}`);
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    // Create detailed popup content
+                    const riskColor = data.risk_probability > 0.6 ? '#e74c3c' : 
+                                    data.risk_probability > 0.4 ? '#f39c12' : '#27ae60';
+                    
+                    const popupContent = `
+                        <div style="min-width: 200px; font-family: 'Open Sans', sans-serif;">
+                            <h4 style="margin: 0 0 10px 0; color: #031D40;">${data.location}</h4>
+                            <div style="background: ${riskColor}; color: white; padding: 5px 10px; border-radius: 15px; text-align: center; font-weight: 600; margin-bottom: 10px;">
+                                ${data.status} (${(data.risk_probability * 100).toFixed(0)}%)
+                            </div>
+                            <div style="font-size: 12px; color: #113240;">
+                                <div><strong>Rainfall:</strong> ${data.current_rainfall.toFixed(1)}mm</div>
+                                <div><strong>Water Level:</strong> ${data.current_water_level.toFixed(1)}m</div>
+                                <div><strong>Elevation:</strong> ${data.geographic_factors.elevation_m.toFixed(1)}m</div>
+                                <div><strong>River Distance:</strong> ${data.geographic_factors.distance_to_river_km.toFixed(1)}km</div>
+                                ${data.geographic_factors.interpolated ? '<div style="font-style: italic; margin-top: 5px;">*Interpolated data</div>' : ''}
+                            </div>
+                        </div>
+                    `;
+                    
+                    loadingPopup.setContent(popupContent);
+                    
+                } catch (error) {
+                    console.error('Error fetching coordinate prediction:', error);
+                    loadingPopup.setContent('<div style="color: #e74c3c;">Error loading prediction</div>');
+                }
+            });
         }
 
         function initializeChart() {
@@ -358,7 +571,7 @@
 
         function updateSystemStatus(data) {
             document.getElementById('systemStatus').textContent = 
-                data.models_loaded ? '🟢 Operational' : '🟡 Limited';
+                data.models_loaded ? 'Operational' : 'Limited';
             document.getElementById('locationsCount').textContent = data.monitored_locations;
             document.getElementById('lastUpdate').textContent = 
                 new Date(data.last_update).toLocaleTimeString();
@@ -375,8 +588,7 @@
                     .addTo(map)
                     .bindPopup(`
                         <strong>${location.name}</strong><br>
-                        Flood Threshold: ${location.threshold}m<br>
-                        <button onclick="showLocationDetails('${location.name}')">View Details</button>
+                        Flood Threshold: ${location.threshold}m
                     `);
                 
                 markers[location.name] = marker;
@@ -392,40 +604,100 @@
                     const response = await fetch(`/api/predict/${location.name}`);
                     const data = await response.json();
                     
-                    const riskClass = data.flood_risk === 1 ? 'risk-high' : 'risk-low';
-                    const riskText = data.status;
+                    const riskClass = data.risk_probability >= 0.75 ? 'risk-critical' :
+                                    data.risk_probability >= 0.6 ? 'risk-high' :
+                                    data.risk_probability >= 0.4 ? 'risk-medium' :
+                                    data.risk_probability >= 0.2 ? 'risk-low' : 'risk-minimal';
                     
                     const locationElement = document.createElement('div');
                     locationElement.className = 'location-item';
                     locationElement.onclick = () => showLocationDetails(location.name);
                     
+                    // Add geographic context
+                    const geoInfo = data.geographic_factors ? 
+                        `Elevation: ${data.geographic_factors.elevation_m}m | River: ${data.geographic_factors.distance_to_river_km}km` :
+                        `Rainfall: ${data.current_rainfall.toFixed(1)}mm | Water Level: ${data.current_water_level.toFixed(1)}m`;
+                    
                     locationElement.innerHTML = `
                         <div class="location-info">
                             <h4>${location.name}</h4>
                             <div class="location-details">
-                                Rainfall: ${data.current_rainfall}mm | 
-                                Water Level: ${data.current_water_level}m
+                                ${geoInfo}
                             </div>
+                            ${data.geographic_factors ? `
+                                <div class="location-details" style="font-size: 0.8rem; margin-top: 2px; opacity: 0.8;">
+                                    ${data.geographic_factors.topography} • ${data.geographic_factors.drainage_quality} drainage
+                                </div>
+                            ` : ''}
                         </div>
                         <div class="risk-badge ${riskClass}">
-                            ${riskText} (${(data.risk_probability * 100).toFixed(0)}%)
+                            ${data.status} (${(data.risk_probability * 100).toFixed(0)}%)
                         </div>
                     `;
                     
                     container.appendChild(locationElement);
                     
-                    // Update marker color based on risk
+                    // Update marker with enhanced styling
                     if (markers[location.name]) {
+                        const riskLevel = data.risk_probability;
+                        const markerColor = riskLevel >= 0.75 ? '#8B0000' :
+                                          riskLevel >= 0.6 ? '#e74c3c' :
+                                          riskLevel >= 0.4 ? '#f39c12' :
+                                          riskLevel >= 0.2 ? '#27ae60' : '#2ecc71';
+                        
+                        const markerSize = Math.max(12, Math.min(20, 12 + riskLevel * 8));
+                        
                         const icon = L.divIcon({
-                            html: data.flood_risk === 1 ? '🔴' : '🟢',
-                            iconSize: [20, 20],
-                            className: 'risk-marker'
+                            html: `<div style="
+                                width: ${markerSize}px; 
+                                height: ${markerSize}px; 
+                                background: ${markerColor}; 
+                                border-radius: 50%; 
+                                border: 3px solid white; 
+                                box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+                                position: relative;
+                            ">
+                                ${riskLevel >= 0.75 ? '<div style="position: absolute; top: -2px; left: -2px; width: ' + (markerSize + 4) + 'px; height: ' + (markerSize + 4) + 'px; border: 2px solid ' + markerColor + '; border-radius: 50%; animation: pulse 2s infinite;"></div>' : ''}
+                            </div>`,
+                            iconSize: [markerSize + 6, markerSize + 6],
+                            className: 'enhanced-marker'
                         });
                         markers[location.name].setIcon(icon);
+                        
+                        // Update popup content
+                        markers[location.name].bindPopup(`
+                            <div style="font-family: 'Open Sans', sans-serif; min-width: 180px;">
+                                <h4 style="margin: 0 0 8px 0; color: #031D40;">${location.name}</h4>
+                                <div style="background: ${markerColor}; color: white; padding: 4px 8px; border-radius: 12px; text-align: center; font-weight: 600; font-size: 12px; margin-bottom: 8px;">
+                                    ${data.status}
+                                </div>
+                                <div style="font-size: 11px; color: #113240; line-height: 1.3;">
+                                    <div><strong>Risk Level:</strong> ${(data.risk_probability * 100).toFixed(0)}%</div>
+                                    <div><strong>Elevation:</strong> ${data.geographic_factors ? data.geographic_factors.elevation_m + 'm' : 'N/A'}</div>
+                                    <div><strong>Drainage:</strong> ${data.geographic_factors ? data.geographic_factors.drainage_quality : 'N/A'}</div>
+                                </div>
+                            </div>
+                        `);
                     }
                     
                 } catch (error) {
                     console.error(`Error loading data for ${location.name}:`, error);
+                    
+                    // Show error state
+                    const locationElement = document.createElement('div');
+                    locationElement.className = 'location-item';
+                    locationElement.innerHTML = `
+                        <div class="location-info">
+                            <h4>${location.name}</h4>
+                            <div class="location-details" style="color: #e74c3c;">
+                                Error loading data
+                            </div>
+                        </div>
+                        <div class="risk-badge" style="background: #95a5a6; color: white;">
+                            UNKNOWN
+                        </div>
+                    `;
+                    container.appendChild(locationElement);
                 }
             }
         }
@@ -443,7 +715,7 @@
             alerts.reverse().forEach(alert => {
                 const alertElement = document.createElement('div');
                 const alertClass = alert.alert_type === 'flood_warning' ? 'alert-warning' : 'alert-info';
-                const alertIcon = alert.alert_type === 'flood_warning' ? '🚨' : '📊';
+                const alertIcon = alert.alert_type === 'flood_warning' ? 'ALERT' : 'INFO';
                 
                 alertElement.className = `alert-item ${alertClass}`;
                 alertElement.innerHTML = `
@@ -494,22 +766,41 @@
 
         function refreshData() {
             const refreshBtn = document.querySelector('.refresh-btn');
-            refreshBtn.textContent = '🔄 Refreshing...';
+            refreshBtn.textContent = 'Refreshing...';
             refreshBtn.disabled = true;
             
             loadDashboardData().finally(() => {
-                refreshBtn.textContent = '🔄 Refresh';
+                refreshBtn.textContent = 'Refresh';
                 refreshBtn.disabled = false;
             });
         }
 
-        // Add some CSS for the risk markers
+        // Add some CSS for the custom markers
         const style = document.createElement('style');
         style.textContent = `
-            .risk-marker {
+            .custom-marker {
                 background: none !important;
                 border: none !important;
-                font-size: 16px;
+            }
+            
+            .leaflet-popup-content-wrapper {
+                background: rgba(242, 242, 242, 0.95);
+                border-radius: 12px;
+                box-shadow: 0 8px 32px rgba(3, 29, 64, 0.15);
+                backdrop-filter: blur(20px);
+                border: 1px solid rgba(99, 187, 242, 0.2);
+            }
+            
+            .leaflet-popup-tip {
+                background: rgba(242, 242, 242, 0.95);
+                box-shadow: none;
+            }
+            
+            .leaflet-popup-content {
+                color: #031D40;
+                font-family: 'Open Sans', sans-serif;
+                font-size: 14px;
+                margin: 12px 16px;
             }
         `;
         document.head.appendChild(style);
