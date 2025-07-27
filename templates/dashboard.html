@@ -267,6 +267,88 @@
             overflow-y: auto;
         }
 
+        .flood-risk-profile {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .flood-risk-item {
+            background: linear-gradient(135deg, rgba(99, 187, 242, 0.05) 0%, rgba(15, 80, 166, 0.02) 100%);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            border-left: 4px solid;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .flood-risk-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 187, 242, 0.15);
+        }
+
+        .flood-risk-item.high {
+            border-left-color: #e74c3c;
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.08) 0%, rgba(192, 57, 43, 0.03) 100%);
+        }
+
+        .flood-risk-item.moderate {
+            border-left-color: #f39c12;
+            background: linear-gradient(135deg, rgba(243, 156, 18, 0.08) 0%, rgba(230, 126, 34, 0.03) 100%);
+        }
+
+        .flood-risk-item.low {
+            border-left-color: #27ae60;
+            background: linear-gradient(135deg, rgba(39, 174, 96, 0.08) 0%, rgba(34, 153, 84, 0.03) 100%);
+        }
+
+        .flood-type-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .flood-type-name {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #031D40;
+            text-transform: capitalize;
+        }
+
+        .flood-risk-percentage {
+            font-weight: 700;
+            font-size: 0.9rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            color: white;
+        }
+
+        .flood-risk-percentage.high {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .flood-risk-percentage.moderate {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+
+        .flood-risk-percentage.low {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        }
+
+        .flood-description {
+            font-size: 0.85rem;
+            color: #113240;
+            margin-bottom: 0.4rem;
+            line-height: 1.4;
+        }
+
+        .flood-damage {
+            font-size: 0.8rem;
+            color: #0F50A6;
+            font-style: italic;
+            opacity: 0.9;
+        }
+
         .alert-item {
             display: flex;
             justify-content: space-between;
@@ -336,6 +418,20 @@
             transform: translateY(0);
         }
 
+        .flood-degree {
+            font-size: 0.85rem;
+            color: #031D40;
+            margin-bottom: 0.3rem;
+            font-weight: 500;
+        }
+
+        .flood-depth {
+            font-size: 0.85rem;
+            color: #0F50A6;
+            margin-bottom: 0.4rem;
+            font-weight: 500;
+        }
+
         @media (max-width: 768px) {
             .grid {
                 grid-template-columns: 1fr;
@@ -389,12 +485,21 @@
 
         <div class="grid">
             <div class="card">
+                <h3>Detailed Flood Risk Profile</h3>
+                <div id="floodRiskProfile" class="flood-risk-profile">
+                    <div class="loading">Select a location to view detailed flood risk breakdown...</div>
+                </div>
+            </div>
+
+            <div class="card">
                 <h3>Risk Trends</h3>
                 <div class="chart-container">
                     <canvas id="riskChart"></canvas>
                 </div>
             </div>
+        </div>
 
+        <div class="grid">
             <div class="card">
                 <h3>Recent Alerts</h3>
                 <div id="alertsList" class="alerts-container">
@@ -455,7 +560,7 @@
                         .setLatLng(e.latlng)
                         .setContent(`
                             <div style="text-align: center; padding: 10px; font-family: 'Open Sans', sans-serif;">
-                                <div style="color: #e74c3c; font-weight: 600; margin-bottom: 5px;">⚠️ Location Outside Bangladesh</div>
+                                <div style="color: #e74c3c; font-weight: 600; margin-bottom: 5px;">Location Outside Bangladesh</div>
                                 <div style="font-size: 12px; color: #666;">
                                     Flood predictions are only available within Bangladesh boundaries.
                                 </div>
@@ -473,6 +578,12 @@
                 
                 try {
                     const response = await fetch(`/api/predict/coordinates/${lat}/${lon}`);
+                    
+                    // Check if response is ok
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
                     const data = await response.json();
                     
                     if (data.error) {
@@ -521,9 +632,18 @@
                     
                     loadingPopup.setContent(popupContent);
                     
+                    // Update the detailed flood risk profile section
+                    console.log('Updating flood risk profile for:', data.location);
+                    console.log('Flood risk profile data:', data.flood_risk_profile);
+                    updateFloodRiskProfile(data.location, data);
+                    
                 } catch (error) {
                     console.error('Error fetching coordinate prediction:', error);
-                    loadingPopup.setContent('<div style="color: #e74c3c;">Error loading prediction</div>');
+                    console.error('Error details:', error.message);
+                    loadingPopup.setContent(`<div style="color: #e74c3c; padding: 10px;">
+                        <div><strong>Error loading prediction</strong></div>
+                        <div style="font-size: 12px; margin-top: 5px;">${error.message}</div>
+                    </div>`);
                 }
             });
         }
@@ -583,6 +703,14 @@
                 const alertsResponse = await fetch('/api/alerts');
                 const alertsData = await alertsResponse.json();
                 updateAlertsList(alertsData.alerts);
+
+                // Load initial flood risk profile for first location
+                if (locationsData && locationsData.length > 0) {
+                    const firstLocation = locationsData[0].name;
+                    const profileResponse = await fetch(`/api/predict/${firstLocation}`);
+                    const profileData = await profileResponse.json();
+                    updateFloodRiskProfile(firstLocation, profileData);
+                }
 
             } catch (error) {
                 console.error('Error loading dashboard data:', error);
@@ -780,6 +908,12 @@
 
         async function showLocationDetails(locationName) {
             try {
+                // Update flood risk profile
+                const profileResponse = await fetch(`/api/predict/${locationName}`);
+                const profileData = await profileResponse.json();
+                updateFloodRiskProfile(locationName, profileData);
+                
+                // Update risk trends chart
                 const response = await fetch(`/api/history/${locationName}`);
                 const data = await response.json();
                 
@@ -799,6 +933,55 @@
             } catch (error) {
                 console.error('Error loading location details:', error);
             }
+        }
+
+        function updateFloodRiskProfile(locationName, data) {
+            const container = document.getElementById('floodRiskProfile');
+            
+            if (!data.flood_risk_profile) {
+                container.innerHTML = '<div class="loading">No detailed flood risk profile available for this location.</div>';
+                return;
+            }
+            
+            const floodTypes = data.flood_risk_profile;
+            const typeNames = {
+                'riverine': 'Riverine Flooding',
+                'urban_drainage': 'Urban Drainage Issues',
+                'flash': 'Flash Flooding',
+                'tidal': 'Tidal/Coastal Flooding'
+            };
+            
+            let profileHtml = `
+                <div style="margin-bottom: 1rem; padding: 0.8rem; background: linear-gradient(135deg, #031D40 0%, #0F50A6 100%); border-radius: 12px; color: white;">
+                    <h4 style="margin: 0; font-size: 1.1rem;">${locationName} - Detailed Risk Analysis</h4>
+                    <p style="margin: 0.3rem 0 0 0; font-size: 0.85rem; opacity: 0.9;">Overall Risk: ${(data.risk_probability * 100).toFixed(1)}% (${data.status})</p>
+                </div>
+            `;
+            
+            // Sort flood types by risk percentage (highest first)
+            const sortedTypes = Object.entries(floodTypes).sort((a, b) => b[1].risk_percentage - a[1].risk_percentage);
+            
+            sortedTypes.forEach(([floodType, profile]) => {
+                const severityClass = profile.severity_level.toLowerCase();
+                const typeName = typeNames[floodType] || floodType.replace('_', ' ');
+                
+                profileHtml += `
+                    <div class="flood-risk-item ${severityClass}">
+                        <div class="flood-type-header">
+                            <div class="flood-type-name">${typeName}</div>
+                            <div class="flood-risk-percentage ${severityClass}">
+                                ${profile.risk_percentage.toFixed(0)}%
+                            </div>
+                        </div>
+                        <div class="flood-description">${profile.description}</div>
+                        <div class="flood-degree">Degree: <strong>${profile.flood_degree}</strong></div>
+                        <div class="flood-depth">Estimated Depth: <strong>${profile.estimated_depth}</strong></div>
+                        <div class="flood-damage">Impact: ${profile.typical_damage}</div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = profileHtml;
         }
 
         function updateRiskChart(historyData) {

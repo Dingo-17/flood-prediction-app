@@ -187,7 +187,7 @@ GEOGRAPHIC_DATA = {
         'drainage_quality': 'Poor',  # Known urban drainage issues
         'river_confluence_distance': 12.5,  # km to Padma-Meghna confluence
         'topography': 'low_lying_urban',
-        'base_risk_factor': 0.04,  # Ultra-low baseline (5-10% max on sunny days)
+        'base_risk_factor': 0.02,  # Ultra-ultra-low baseline (2-8% max on sunny days)
         'annual_rainfall_mm': 2025,  # Historical average
         'flood_history_frequency': 8,  # floods per decade
         'population_density': 23234,  # people per km²
@@ -201,7 +201,7 @@ GEOGRAPHIC_DATA = {
         'drainage_quality': 'Moderate',
         'river_confluence_distance': 25.3,  # Distance to major confluence
         'topography': 'river_valley',
-        'base_risk_factor': 0.05,  # Ultra-low baseline for flood-prone area
+        'base_risk_factor': 0.025,  # Ultra-ultra-low baseline for flood-prone area
         'annual_rainfall_mm': 3334,  # One of highest in Bangladesh
         'flood_history_frequency': 12,  # Very frequent flooding
         'population_density': 1020,
@@ -215,7 +215,7 @@ GEOGRAPHIC_DATA = {
         'drainage_quality': 'Good',
         'river_confluence_distance': 89.4,
         'topography': 'elevated_plain',
-        'base_risk_factor': 0.02,  # Ultra-minimal baseline for safe area
+        'base_risk_factor': 0.015,  # Ultra-ultra-minimal baseline for safe area
         'annual_rainfall_mm': 1448,  # Lower rainfall region
         'flood_history_frequency': 3,  # Less frequent flooding
         'population_density': 1265,
@@ -229,7 +229,7 @@ GEOGRAPHIC_DATA = {
         'drainage_quality': 'Moderate',
         'river_confluence_distance': 8.2,  # Near major confluence point
         'topography': 'river_plain',
-        'base_risk_factor': 0.05,  # Ultra-low baseline for river proximity
+        'base_risk_factor': 0.025,  # Ultra-ultra-low baseline for river proximity
         'annual_rainfall_mm': 1832,
         'flood_history_frequency': 9,  # Frequent due to Jamuna flooding
         'population_density': 890,
@@ -243,7 +243,7 @@ GEOGRAPHIC_DATA = {
         'drainage_quality': 'Poor',  # Coastal drainage challenges
         'river_confluence_distance': 42.8,
         'topography': 'coastal_low',
-        'base_risk_factor': 0.04,  # Ultra-low baseline for coastal area
+        'base_risk_factor': 0.02,  # Ultra-ultra-low baseline for coastal area
         'annual_rainfall_mm': 2666,  # High coastal rainfall
         'flood_history_frequency': 7,  # Regular coastal and river flooding
         'population_density': 2800,
@@ -284,6 +284,10 @@ def predict_location(location):
         # Get enhanced geographic risk factors
         geographic_risk = calculate_enhanced_geographic_risk(location)
         flood_risk_profile = calculate_flood_risk_profile(location)
+        
+        # Calculate overall risk as weighted average of individual flood types
+        weighted_overall_risk = calculate_weighted_overall_risk(flood_risk_profile)
+        
         geo_data = GEOGRAPHIC_DATA.get(location, {})
         base_risk = geo_data.get('base_risk_factor', 0.5)
         
@@ -431,6 +435,9 @@ def predict_location(location):
                 max_risk = 0.45   # Lower maximum
                 final_risk_score = np.clip(final_risk_score, min_risk, max_risk)
                 
+                # Override ML risk with weighted overall risk from flood types
+                final_risk_score = weighted_overall_risk
+                
                 flood_prediction = int(final_risk_score > 0.6)
                 
                 # Enhanced debugging info
@@ -463,6 +470,10 @@ def predict_location(location):
                                                      latest_water_level, threshold, geographic_risk)
             flood_prediction = int(final_risk_score > 0.6)
             debug_info = {'used_fallback': True, 'reason': 'Model not available or incomplete features'}
+        
+        # Override final_risk_score with weighted overall risk from flood types
+        final_risk_score = weighted_overall_risk
+        flood_prediction = int(final_risk_score > 0.6)
         
         # Determine risk level with enhanced granularity
         if final_risk_score >= 0.85:
@@ -514,8 +525,10 @@ def predict_location(location):
             },
             'flood_risk_profile': {
                 flood_type: {
-                    'risk_percentage': float(profile['risk'] * 100),
-                    'severity_level': profile['severity'],
+                    'risk_percentage': float(profile['risk_percentage']),
+                    'severity_level': profile['severity_level'],
+                    'flood_degree': profile['flood_degree'],
+                    'estimated_depth': profile['estimated_depth'],
                     'description': profile['description'],
                     'typical_damage': profile['typical_damage']
                 } for flood_type, profile in flood_risk_profile.items()
@@ -743,9 +756,9 @@ def get_simulated_data(location='Dhaka', days=7):
         'rainfall': rainfall
     })
 
-def calculate_flood_risk_profile(location):
-    """Calculate comprehensive flood risk profile with type-specific assessments"""
-    geo_data = GEOGRAPHIC_DATA.get(location, {})
+def calculate_flood_risk_profile(location, lat=None, lon=None):
+    """Calculate comprehensive flood risk profile with type-specific assessments and flood degrees"""
+    geo_data = GEOGRAPHIC_DATA.get(location, {}) if location else {}
     
     # Base geographic factors
     elevation = geo_data.get('elevation', 10)
@@ -754,52 +767,99 @@ def calculate_flood_risk_profile(location):
     urbanization = geo_data.get('urbanization_factor', 0.5)
     flood_frequency = geo_data.get('flood_history_frequency', 5)
     
-    # Calculate different flood type risks
+    # For coordinate-based predictions, use interpolated data if available
+    if lat is not None and lon is not None and (location is None or not geo_data):
+        # Use basic interpolation for coordinates
+        elevation = max(5, 15 - abs(lat - 23.5) * 2)  # Rough elevation estimate
+        river_distance = min(50, abs(lat - 23.5) * 10 + abs(lon - 90.0) * 8)
+        urbanization = max(0.2, 0.8 - (abs(lat - 23.68) + abs(lon - 90.35)) * 0.3)
+        drainage_quality = 'Moderate'  # Default for coordinates
+        flood_frequency = 5  # Default for coordinates
+    
+    # Calculate different flood type risks with ultra-conservative approach
     flood_types = {}
     
-    # 1. RIVERINE FLOODING (major river overflow)
-    riverine_risk = max(0.02, 1.0 - (river_distance / 20.0))  # High near rivers
-    riverine_risk *= (1.0 - elevation / 30.0)  # Higher at lower elevations
-    if flood_frequency > 8:  # Historical river flooding
-        riverine_risk *= 1.1
+    def get_flood_degree(risk_value):
+        """Determine flood degree based on risk value"""
+        if risk_value >= 0.20:
+            return "Severe"
+        elif risk_value >= 0.12:
+            return "Moderate"
+        elif risk_value >= 0.06:
+            return "Minor"
+        else:
+            return "Minimal"
+    
+    def get_water_depth_estimate(flood_type, risk_value):
+        """Estimate potential water depth based on flood type and risk"""
+        base_depths = {
+            'riverine': {'Severe': '2-4m', 'Moderate': '1-2m', 'Minor': '0.3-1m', 'Minimal': '0-0.3m'},
+            'urban_drainage': {'Severe': '1-2m', 'Moderate': '0.5-1m', 'Minor': '0.2-0.5m', 'Minimal': '0-0.2m'},
+            'flash': {'Severe': '1.5-3m', 'Moderate': '0.8-1.5m', 'Minor': '0.3-0.8m', 'Minimal': '0-0.3m'},
+            'tidal': {'Severe': '2-5m', 'Moderate': '1-2m', 'Minor': '0.5-1m', 'Minimal': '0-0.5m'}
+        }
+        degree = get_flood_degree(risk_value)
+        return base_depths.get(flood_type, {}).get(degree, '0-0.3m')
+    
+    # 1. RIVERINE FLOODING (major river overflow) - Ultra-conservative
+    riverine_risk = max(0.01, 1.0 - (river_distance / 25.0))  # Reduced from 20.0
+    riverine_risk *= (1.0 - elevation / 40.0)  # Reduced from 30.0
+    if flood_frequency > 10:  # Raised threshold from 8
+        riverine_risk *= 1.05  # Reduced from 1.1
+    final_riverine_risk = np.clip(riverine_risk * 0.15, 0.01, 0.15)  # Reduced from 0.4 and 0.35
+    
     flood_types['riverine'] = {
-        'risk': np.clip(riverine_risk * 0.4, 0.02, 0.35),
-        'severity': 'High' if riverine_risk > 0.6 else 'Moderate' if riverine_risk > 0.3 else 'Low',
+        'risk_percentage': final_riverine_risk * 100,
+        'severity_level': 'High' if final_riverine_risk > 0.12 else 'Moderate' if final_riverine_risk > 0.06 else 'Low',
+        'flood_degree': get_flood_degree(final_riverine_risk),
+        'estimated_depth': get_water_depth_estimate('riverine', final_riverine_risk),
         'description': 'Major river overflow causing widespread inundation',
         'typical_damage': 'Infrastructure damage, displacement, agricultural losses'
     }
     
-    # 2. URBAN DRAINAGE FLOODING (poor drainage, clogged systems)
-    urban_drainage_risk = urbanization * 0.8
-    drainage_multiplier = {'Poor': 1.4, 'Moderate': 1.0, 'Good': 0.6}.get(drainage_quality, 1.0)
+    # 2. URBAN DRAINAGE FLOODING (poor drainage, clogged systems) - Ultra-conservative
+    urban_drainage_risk = urbanization * 0.5  # Reduced from 0.8
+    drainage_multiplier = {'Poor': 1.2, 'Moderate': 0.9, 'Good': 0.5}.get(drainage_quality, 0.9)  # Reduced all values
     urban_drainage_risk *= drainage_multiplier
     if location in ['Dhaka', 'Chittagong']:  # Known urban drainage issues
-        urban_drainage_risk *= 1.2
+        urban_drainage_risk *= 1.05  # Reduced from 1.2
+    final_urban_risk = np.clip(urban_drainage_risk * 0.12, 0.01, 0.12)  # Reduced from 0.3 and 0.25
+    
     flood_types['urban_drainage'] = {
-        'risk': np.clip(urban_drainage_risk * 0.3, 0.02, 0.25),
-        'severity': 'High' if urban_drainage_risk > 0.7 else 'Moderate' if urban_drainage_risk > 0.4 else 'Low',
+        'risk_percentage': final_urban_risk * 100,
+        'severity_level': 'High' if final_urban_risk > 0.09 else 'Moderate' if final_urban_risk > 0.05 else 'Low',
+        'flood_degree': get_flood_degree(final_urban_risk),
+        'estimated_depth': get_water_depth_estimate('urban_drainage', final_urban_risk),
         'description': 'Waterlogging due to inadequate drainage systems',
         'typical_damage': 'Traffic disruption, property damage, health concerns'
     }
     
-    # 3. FLASH FLOODING (sudden, intense rainfall)
-    flash_risk = (1.0 - elevation / 25.0) * 0.6  # Lower areas more prone
+    # 3. FLASH FLOODING (sudden, intense rainfall) - Ultra-conservative
+    flash_risk = (1.0 - elevation / 35.0) * 0.4  # Reduced from 25.0 and 0.6
     if geo_data.get('topography') in ['low_lying_urban', 'river_valley']:
-        flash_risk *= 1.3
+        flash_risk *= 1.1  # Reduced from 1.3
+    final_flash_risk = np.clip(flash_risk * 0.18, 0.01, 0.14)  # Reduced from 0.35 and 0.3
+    
     flood_types['flash'] = {
-        'risk': np.clip(flash_risk * 0.35, 0.02, 0.3),
-        'severity': 'High' if flash_risk > 0.6 else 'Moderate' if flash_risk > 0.3 else 'Low',
+        'risk_percentage': final_flash_risk * 100,
+        'severity_level': 'High' if final_flash_risk > 0.10 else 'Moderate' if final_flash_risk > 0.05 else 'Low',
+        'flood_degree': get_flood_degree(final_flash_risk),
+        'estimated_depth': get_water_depth_estimate('flash', final_flash_risk),
         'description': 'Rapid onset flooding from intense rainfall',
         'typical_damage': 'Immediate safety risks, transportation disruption'
     }
     
-    # 4. TIDAL/COASTAL FLOODING (for coastal areas)
-    tidal_risk = 0.02  # Default minimal
+    # 4. TIDAL/COASTAL FLOODING (for coastal areas) - Ultra-conservative
+    tidal_risk = 0.01  # Reduced from 0.02
     if location in ['Chittagong'] or geo_data.get('topography') == 'coastal_low':
-        tidal_risk = max(0.15, 1.0 - elevation / 8.0)  # Very high for low coastal areas
+        tidal_risk = max(0.08, 1.0 - elevation / 12.0)  # Reduced from 0.15 and 8.0
+    final_tidal_risk = np.clip(tidal_risk * 0.12, 0.01, 0.10)  # Reduced from 0.25 and 0.2
+    
     flood_types['tidal'] = {
-        'risk': np.clip(tidal_risk * 0.25, 0.02, 0.2),
-        'severity': 'High' if tidal_risk > 0.5 else 'Moderate' if tidal_risk > 0.25 else 'Low',
+        'risk_percentage': final_tidal_risk * 100,
+        'severity_level': 'High' if final_tidal_risk > 0.08 else 'Moderate' if final_tidal_risk > 0.04 else 'Low',
+        'flood_degree': get_flood_degree(final_tidal_risk),
+        'estimated_depth': get_water_depth_estimate('tidal', final_tidal_risk),
         'description': 'Sea level rise and storm surge flooding',
         'typical_damage': 'Saltwater contamination, infrastructure corrosion'
     }
@@ -1263,13 +1323,16 @@ def predict_coordinates(lat, lon):
         # Check if we're in a transition zone for smoother blending
         transition_factors = calculate_enhanced_transition_zone_factor(lat, lon)
         
+        # Initialize variables for blending calculations
+        blended_risk = 0
+        total_weight = 0
+        confidence_sum = 0
+        smoothing_factor = 0.0
+        
         if transition_factors and len(transition_factors) > 1:
             # We're in a transition zone - use advanced blending
-            blended_risk = 0
-            total_weight = 0
-            confidence_sum = 0
             
-            for loc_name, weight in transition_factors.items():
+            for loc_name, weight in (transition_factors.items() if transition_factors else []):
                 try:
                     # Get prediction for this location with error handling
                     loc_response = predict_location(loc_name)
@@ -1299,12 +1362,18 @@ def predict_coordinates(lat, lon):
                 prediction_confidence = min(0.95, confidence_sum / sum(transition_factors.values()))
                 
                 # Apply spatial smoothing to prevent sharp transitions
-                smoothing_factor = 0.15 * len(transition_factors)  # More smoothing with more influences
+                smoothing_factor = 0.15 * (len(transition_factors) if transition_factors else 0)  # More smoothing with more influences
                 geographic_base = geo_data.get('base_risk_factor', 0.5)
                 final_risk_score = (final_risk_score * (1 - smoothing_factor) + 
                                   geographic_base * smoothing_factor)
                 
                 final_risk_score = np.clip(final_risk_score, 0.05, 0.95)
+                
+                # Generate comprehensive flood risk profile for coordinates
+                coordinate_flood_profile = calculate_flood_risk_profile(None, lat=lat, lon=lon)
+                
+                # Override final_risk_score with weighted overall risk from flood types
+                final_risk_score = calculate_weighted_overall_risk(coordinate_flood_profile)
                 
                 # Enhanced status determination
                 if final_risk_score >= 0.85:
@@ -1343,27 +1412,33 @@ def predict_coordinates(lat, lon):
                         'interpolated': True,
                         'in_transition_zone': True,
                         'base_risk_factor': float(geo_data.get('base_risk_factor', 0.5)),
-                        'transition_influences': {loc: f"{weight:.3f}" for loc, weight in transition_factors.items()},
+                        'transition_influences': {loc: f"{weight:.3f}" for loc, weight in (transition_factors.items() if transition_factors else [])},
                         'smoothing_applied': smoothing_factor
                     },
                     'flood_risk_profile': {
-                        'primary_risk_type': 'Mixed (transition zone)',
-                        'note': 'Risk profile blended from nearby monitoring locations',
-                        'contributing_locations': list(transition_factors.keys())
+                        flood_type: {
+                            'risk_percentage': float(profile['risk_percentage']),
+                            'severity_level': profile['severity_level'],
+                            'flood_degree': profile['flood_degree'],
+                            'estimated_depth': profile['estimated_depth'],
+                            'description': profile['description'],
+                            'typical_damage': profile['typical_damage']
+                        } for flood_type, profile in (coordinate_flood_profile.items() if coordinate_flood_profile else {})
                     },
                     'model_info': {
                         'version': '2.0.0',
                         'prediction_method': 'enhanced_transition_blend',
-                        'locations_used': len(transition_factors),
+                        'locations_used': len(transition_factors) if transition_factors else 0,
                         'total_weight': float(total_weight)
                     },
-                    'note': f'Advanced prediction in transition zone (blended from {len(transition_factors)} locations)'
+                    'note': f'Advanced prediction in transition zone (blended from {len(transition_factors) if transition_factors else 0} locations)'
                 }
                 
                 return jsonify(response_data)
         
         # Not in transition zone or single influence - use enhanced interpolation
         geographic_risk = geo_data.get('base_risk_factor', 0.5)
+        smoothing_factor = geo_data.get('smoothing_applied', 0.0)  # Initialize smoothing factor
         
         # Try to use enhanced ML model if available and we have enough data
         if rf_model is not None and scaler is not None and len(feature_cols) == 9:
@@ -1453,6 +1528,32 @@ def predict_coordinates(lat, lon):
             status = 'LOW RISK'
             risk_class = 'risk-low'
         
+        # Generate comprehensive flood risk profile for coordinates
+        coordinate_flood_profile = calculate_flood_risk_profile(None, lat=lat, lon=lon)
+        
+        # Override final_risk_score with weighted overall risk from flood types
+        final_risk_score = calculate_weighted_overall_risk(coordinate_flood_profile)
+        
+        # Recalculate status based on weighted risk
+        if final_risk_score >= 0.85:
+            status = 'EXTREME RISK'
+            risk_class = 'risk-extreme'
+        elif final_risk_score >= 0.75:
+            status = 'CRITICAL RISK'  
+            risk_class = 'risk-critical'
+        elif final_risk_score >= 0.6:
+            status = 'HIGH RISK'
+            risk_class = 'risk-high'
+        elif final_risk_score >= 0.4:
+            status = 'MODERATE RISK'
+            risk_class = 'risk-medium'
+        elif final_risk_score >= 0.2:
+            status = 'LOW RISK'
+            risk_class = 'risk-low'
+        else:
+            status = 'MINIMAL RISK'
+            risk_class = 'risk-minimal'
+        
         response_data = {
             'location': f"Coordinates ({lat:.3f}, {lon:.3f})",
             'coordinates': {'lat': lat, 'lon': lon},
@@ -1470,18 +1571,29 @@ def predict_coordinates(lat, lon):
                 'distance_to_river_km': geo_data['distance_to_major_river'],
                 'drainage_quality': geo_data.get('drainage_quality', 'Unknown'),
                 'urbanization_factor': geo_data.get('urbanization_factor', 0.5),
-                'interpolated': geo_data.get('interpolated', False),
+                'interpolated': True,
+                'in_transition_zone': True,
                 'base_risk_factor': float(geo_data.get('base_risk_factor', 0.5)),
-                'primary_influence': geo_data.get('primary_influence', 'None'),
-                'smoothing_applied': geo_data.get('smoothing_applied', 0.0)
+                'transition_influences': {loc: f"{weight:.3f}" for loc, weight in (transition_factors.items() if transition_factors else [])},
+                'smoothing_applied': smoothing_factor
+            },
+            'flood_risk_profile': {
+                flood_type: {
+                    'risk_percentage': float(profile['risk_percentage']),
+                    'severity_level': profile['severity_level'],
+                    'flood_degree': profile['flood_degree'],
+                    'estimated_depth': profile['estimated_depth'],
+                    'description': profile['description'],
+                    'typical_damage': profile['typical_damage']
+                } for flood_type, profile in (coordinate_flood_profile.items() if coordinate_flood_profile else {})
             },
             'model_info': {
                 'version': '2.0.0',
-                'prediction_method': prediction_method,
-                'features_used': len(feature_cols) if feature_cols else 0,
-                'ml_available': rf_model is not None
+                'prediction_method': 'enhanced_transition_blend',
+                'locations_used': len(transition_factors) if transition_factors else 0,
+                'total_weight': float(total_weight)
             },
-            'note': 'Enhanced prediction using advanced interpolation and ML modeling'
+            'note': f'Advanced prediction in transition zone (blended from {len(transition_factors) if transition_factors else 0} locations)'
         }
         
         return jsonify(response_data)
@@ -1492,6 +1604,39 @@ def predict_coordinates(lat, lon):
             'error': f'Prediction failed: {str(e)}',
             'coordinates': {'lat': lat, 'lon': lon}
         }), 500
+
+def calculate_weighted_overall_risk(flood_risk_profile):
+    """Calculate overall risk as weighted average of individual flood type risks"""
+    
+    # Safety check for None input
+    if not flood_risk_profile:
+        return 0.05  # Default minimal risk
+    
+    # Define weights for each flood type (should sum to 1.0)
+    weights = {
+        'riverine': 0.35,        # Highest weight - major infrastructure impact
+        'urban_drainage': 0.30,  # High weight - affects daily life significantly  
+        'flash': 0.25,          # Moderate weight - immediate danger but localized
+        'tidal': 0.10           # Lower weight - limited to coastal areas
+    }
+    
+    weighted_sum = 0.0
+    total_weight = 0.0
+    
+    for flood_type, profile in flood_risk_profile.items():
+        if flood_type in weights and profile:
+            risk_percentage = profile.get('risk_percentage', 0)
+            weight = weights[flood_type]
+            weighted_sum += (risk_percentage / 100.0) * weight
+            total_weight += weight
+    
+    # Normalize by total weight (in case not all flood types are present)
+    if total_weight > 0:
+        overall_risk = weighted_sum / total_weight
+    else:
+        overall_risk = 0.05  # Default minimal risk
+    
+    return overall_risk
 
 if __name__ == '__main__':
     import os
