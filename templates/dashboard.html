@@ -483,6 +483,25 @@
                     const riskColor = data.risk_probability > 0.6 ? '#e74c3c' : 
                                     data.risk_probability > 0.4 ? '#f39c12' : '#27ae60';
                     
+                    // Get primary flood risk type
+                    let primaryRiskInfo = '';
+                    if (data.flood_risk_profile && !data.flood_risk_profile.primary_risk_type) {
+                        const profiles = data.flood_risk_profile;
+                        const highestRisk = Object.entries(profiles)
+                            .sort((a, b) => b[1].risk_percentage - a[1].risk_percentage)[0];
+                        
+                        if (highestRisk) {
+                            const [riskType, riskData] = highestRisk;
+                            const typeNames = {
+                                'riverine': 'River Overflow',
+                                'urban_drainage': 'Drainage',
+                                'flash': 'Flash Flood',
+                                'tidal': 'Coastal'
+                            };
+                            primaryRiskInfo = `<div><strong>Primary Risk:</strong> ${typeNames[riskType] || riskType}</div>`;
+                        }
+                    }
+                    
                     const popupContent = `
                         <div style="min-width: 200px; font-family: 'Open Sans', sans-serif;">
                             <h4 style="margin: 0 0 10px 0; color: #031D40;">${data.location}</h4>
@@ -494,6 +513,7 @@
                                 <div><strong>Water Level:</strong> ${data.current_water_level.toFixed(1)}m</div>
                                 <div><strong>Elevation:</strong> ${data.geographic_factors.elevation_m.toFixed(1)}m</div>
                                 <div><strong>River Distance:</strong> ${data.geographic_factors.distance_to_river_km.toFixed(1)}km</div>
+                                ${primaryRiskInfo}
                                 ${data.geographic_factors.interpolated ? '<div style="font-style: italic; margin-top: 5px;">*Interpolated data</div>' : ''}
                             </div>
                         </div>
@@ -618,6 +638,29 @@
                         `Elevation: ${data.geographic_factors.elevation_m}m | River: ${data.geographic_factors.distance_to_river_km}km` :
                         `Rainfall: ${data.current_rainfall.toFixed(1)}mm | Water Level: ${data.current_water_level.toFixed(1)}m`;
                     
+                    // Create flood risk profile summary
+                    let riskProfileHtml = '';
+                    if (data.flood_risk_profile) {
+                        const profiles = data.flood_risk_profile;
+                        const highestRisk = Object.entries(profiles)
+                            .sort((a, b) => b[1].risk_percentage - a[1].risk_percentage)[0];
+                        
+                        if (highestRisk) {
+                            const [riskType, riskData] = highestRisk;
+                            const typeNames = {
+                                'riverine': 'River Overflow',
+                                'urban_drainage': 'Drainage Issues',
+                                'flash': 'Flash Flood',
+                                'tidal': 'Coastal/Tidal'
+                            };
+                            riskProfileHtml = `
+                                <div class="location-details" style="font-size: 0.75rem; margin-top: 3px; opacity: 0.9; color: #0F50A6;">
+                                    Primary: ${typeNames[riskType] || riskType} (${riskData.risk_percentage.toFixed(0)}% risk)
+                                </div>
+                            `;
+                        }
+                    }
+                    
                     locationElement.innerHTML = `
                         <div class="location-info">
                             <h4>${location.name}</h4>
@@ -629,6 +672,7 @@
                                     ${data.geographic_factors.topography} • ${data.geographic_factors.drainage_quality} drainage
                                 </div>
                             ` : ''}
+                            ${riskProfileHtml}
                         </div>
                         <div class="risk-badge ${riskClass}">
                             ${data.status} (${(data.risk_probability * 100).toFixed(0)}%)
@@ -675,6 +719,8 @@
                                     <div><strong>Risk Level:</strong> ${(data.risk_probability * 100).toFixed(0)}%</div>
                                     <div><strong>Elevation:</strong> ${data.geographic_factors ? data.geographic_factors.elevation_m + 'm' : 'N/A'}</div>
                                     <div><strong>Drainage:</strong> ${data.geographic_factors ? data.geographic_factors.drainage_quality : 'N/A'}</div>
+                                    ${data.flood_risk_profile ? Object.entries(data.flood_risk_profile).sort((a, b) => b[1].risk_percentage - a[1].risk_percentage)[0] ? 
+                                        `<div><strong>Primary Risk:</strong> ${Object.entries(data.flood_risk_profile).sort((a, b) => b[1].risk_percentage - a[1].risk_percentage)[0][0].replace('_', ' ')}</div>` : '' : ''}
                                 </div>
                             </div>
                         `);

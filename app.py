@@ -283,6 +283,7 @@ def predict_location(location):
         
         # Get enhanced geographic risk factors
         geographic_risk = calculate_enhanced_geographic_risk(location)
+        flood_risk_profile = calculate_flood_risk_profile(location)
         geo_data = GEOGRAPHIC_DATA.get(location, {})
         base_risk = geo_data.get('base_risk_factor', 0.5)
         
@@ -511,6 +512,14 @@ def predict_location(location):
                 'base_risk_factor': float(base_risk),
                 'geographic_risk_contribution': float(geographic_risk)
             },
+            'flood_risk_profile': {
+                flood_type: {
+                    'risk_percentage': float(profile['risk'] * 100),
+                    'severity_level': profile['severity'],
+                    'description': profile['description'],
+                    'typical_damage': profile['typical_damage']
+                } for flood_type, profile in flood_risk_profile.items()
+            },
             'recent_data': [{
                 'date': row['date'],
                 'rainfall': float(row['rainfall']),
@@ -733,6 +742,69 @@ def get_simulated_data(location='Dhaka', days=7):
         'date': dates,
         'rainfall': rainfall
     })
+
+def calculate_flood_risk_profile(location):
+    """Calculate comprehensive flood risk profile with type-specific assessments"""
+    geo_data = GEOGRAPHIC_DATA.get(location, {})
+    
+    # Base geographic factors
+    elevation = geo_data.get('elevation', 10)
+    river_distance = geo_data.get('distance_to_major_river', 10)
+    drainage_quality = geo_data.get('drainage_quality', 'Moderate')
+    urbanization = geo_data.get('urbanization_factor', 0.5)
+    flood_frequency = geo_data.get('flood_history_frequency', 5)
+    
+    # Calculate different flood type risks
+    flood_types = {}
+    
+    # 1. RIVERINE FLOODING (major river overflow)
+    riverine_risk = max(0.02, 1.0 - (river_distance / 20.0))  # High near rivers
+    riverine_risk *= (1.0 - elevation / 30.0)  # Higher at lower elevations
+    if flood_frequency > 8:  # Historical river flooding
+        riverine_risk *= 1.1
+    flood_types['riverine'] = {
+        'risk': np.clip(riverine_risk * 0.4, 0.02, 0.35),
+        'severity': 'High' if riverine_risk > 0.6 else 'Moderate' if riverine_risk > 0.3 else 'Low',
+        'description': 'Major river overflow causing widespread inundation',
+        'typical_damage': 'Infrastructure damage, displacement, agricultural losses'
+    }
+    
+    # 2. URBAN DRAINAGE FLOODING (poor drainage, clogged systems)
+    urban_drainage_risk = urbanization * 0.8
+    drainage_multiplier = {'Poor': 1.4, 'Moderate': 1.0, 'Good': 0.6}.get(drainage_quality, 1.0)
+    urban_drainage_risk *= drainage_multiplier
+    if location in ['Dhaka', 'Chittagong']:  # Known urban drainage issues
+        urban_drainage_risk *= 1.2
+    flood_types['urban_drainage'] = {
+        'risk': np.clip(urban_drainage_risk * 0.3, 0.02, 0.25),
+        'severity': 'High' if urban_drainage_risk > 0.7 else 'Moderate' if urban_drainage_risk > 0.4 else 'Low',
+        'description': 'Waterlogging due to inadequate drainage systems',
+        'typical_damage': 'Traffic disruption, property damage, health concerns'
+    }
+    
+    # 3. FLASH FLOODING (sudden, intense rainfall)
+    flash_risk = (1.0 - elevation / 25.0) * 0.6  # Lower areas more prone
+    if geo_data.get('topography') in ['low_lying_urban', 'river_valley']:
+        flash_risk *= 1.3
+    flood_types['flash'] = {
+        'risk': np.clip(flash_risk * 0.35, 0.02, 0.3),
+        'severity': 'High' if flash_risk > 0.6 else 'Moderate' if flash_risk > 0.3 else 'Low',
+        'description': 'Rapid onset flooding from intense rainfall',
+        'typical_damage': 'Immediate safety risks, transportation disruption'
+    }
+    
+    # 4. TIDAL/COASTAL FLOODING (for coastal areas)
+    tidal_risk = 0.02  # Default minimal
+    if location in ['Chittagong'] or geo_data.get('topography') == 'coastal_low':
+        tidal_risk = max(0.15, 1.0 - elevation / 8.0)  # Very high for low coastal areas
+    flood_types['tidal'] = {
+        'risk': np.clip(tidal_risk * 0.25, 0.02, 0.2),
+        'severity': 'High' if tidal_risk > 0.5 else 'Moderate' if tidal_risk > 0.25 else 'Low',
+        'description': 'Sea level rise and storm surge flooding',
+        'typical_damage': 'Saltwater contamination, infrastructure corrosion'
+    }
+    
+    return flood_types
 
 def calculate_enhanced_geographic_risk(location):
     """Calculate enhanced geographic risk factor with comprehensive analysis"""
@@ -1273,6 +1345,11 @@ def predict_coordinates(lat, lon):
                         'base_risk_factor': float(geo_data.get('base_risk_factor', 0.5)),
                         'transition_influences': {loc: f"{weight:.3f}" for loc, weight in transition_factors.items()},
                         'smoothing_applied': smoothing_factor
+                    },
+                    'flood_risk_profile': {
+                        'primary_risk_type': 'Mixed (transition zone)',
+                        'note': 'Risk profile blended from nearby monitoring locations',
+                        'contributing_locations': list(transition_factors.keys())
                     },
                     'model_info': {
                         'version': '2.0.0',
