@@ -4,8 +4,8 @@
 echo "🚀 Starting build process..."
 
 # Install Python dependencies
-echo "📦 Installing Python packages from requirements-production.txt..."
-pip install -r requirements-production.txt
+echo "📦 Installing Python packages from requirements.txt..."
+pip install -r requirements.txt
 
 echo "✅ Build completed successfully!"
 
