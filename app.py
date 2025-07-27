@@ -187,7 +187,7 @@ GEOGRAPHIC_DATA = {
         'drainage_quality': 'Poor',  # Known urban drainage issues
         'river_confluence_distance': 12.5,  # km to Padma-Meghna confluence
         'topography': 'low_lying_urban',
-        'base_risk_factor': 0.12,  # Even lower baseline for urban area
+        'base_risk_factor': 0.04,  # Ultra-low baseline (5-10% max on sunny days)
         'annual_rainfall_mm': 2025,  # Historical average
         'flood_history_frequency': 8,  # floods per decade
         'population_density': 23234,  # people per km²
@@ -201,7 +201,7 @@ GEOGRAPHIC_DATA = {
         'drainage_quality': 'Moderate',
         'river_confluence_distance': 25.3,  # Distance to major confluence
         'topography': 'river_valley',
-        'base_risk_factor': 0.15,  # Even lower baseline for flood-prone area
+        'base_risk_factor': 0.05,  # Ultra-low baseline for flood-prone area
         'annual_rainfall_mm': 3334,  # One of highest in Bangladesh
         'flood_history_frequency': 12,  # Very frequent flooding
         'population_density': 1020,
@@ -215,7 +215,7 @@ GEOGRAPHIC_DATA = {
         'drainage_quality': 'Good',
         'river_confluence_distance': 89.4,
         'topography': 'elevated_plain',
-        'base_risk_factor': 0.05,  # Minimal baseline for safe area
+        'base_risk_factor': 0.02,  # Ultra-minimal baseline for safe area
         'annual_rainfall_mm': 1448,  # Lower rainfall region
         'flood_history_frequency': 3,  # Less frequent flooding
         'population_density': 1265,
@@ -229,7 +229,7 @@ GEOGRAPHIC_DATA = {
         'drainage_quality': 'Moderate',
         'river_confluence_distance': 8.2,  # Near major confluence point
         'topography': 'river_plain',
-        'base_risk_factor': 0.14,  # Lower baseline for river proximity
+        'base_risk_factor': 0.05,  # Ultra-low baseline for river proximity
         'annual_rainfall_mm': 1832,
         'flood_history_frequency': 9,  # Frequent due to Jamuna flooding
         'population_density': 890,
@@ -243,7 +243,7 @@ GEOGRAPHIC_DATA = {
         'drainage_quality': 'Poor',  # Coastal drainage challenges
         'river_confluence_distance': 42.8,
         'topography': 'coastal_low',
-        'base_risk_factor': 0.11,  # Even lower baseline for coastal area
+        'base_risk_factor': 0.04,  # Ultra-low baseline for coastal area
         'annual_rainfall_mm': 2666,  # High coastal rainfall
         'flood_history_frequency': 7,  # Regular coastal and river flooding
         'population_density': 2800,
@@ -397,37 +397,37 @@ def predict_location(location):
                 # Start with very low base component weights
                 base_ml_risk = ml_risk_probability * model_confidence
                 
-                # Apply very conservative risk scaling - vast majority of days should be low risk
+                # Apply ultra-conservative risk scaling - ensure sunny days stay at 5-10%
                 # Only extreme conditions should show moderate to high risk
-                if base_ml_risk < 0.25:
-                    # Very low risk scenarios (most common) - keep them very low
-                    final_risk_score = base_ml_risk * 0.5 + geographic_risk * 0.12
-                elif base_ml_risk < 0.5:
+                if base_ml_risk < 0.15:
+                    # Very low risk scenarios (most common) - keep them ultra-low
+                    final_risk_score = base_ml_risk * 0.25 + geographic_risk * 0.06
+                elif base_ml_risk < 0.35:
                     # Low risk scenarios - minimal increase
-                    final_risk_score = base_ml_risk * 0.6 + geographic_risk * 0.15
+                    final_risk_score = base_ml_risk * 0.35 + geographic_risk * 0.08
                 else:
                     # Moderate risk scenarios - gentle increase
-                    final_risk_score = base_ml_risk * 0.7 + geographic_risk * 0.18
+                    final_risk_score = base_ml_risk * 0.45 + geographic_risk * 0.10
                 
-                # Very conservative extreme conditions check
-                extreme_rain = rainfall_3day > (geo_data.get('annual_rainfall_mm', 2000) / 25)  # More than 4% of annual rain in 3 days
-                extreme_water = latest_water_level > (threshold * 0.88)
+                # Ultra-conservative extreme conditions check
+                extreme_rain = rainfall_3day > (geo_data.get('annual_rainfall_mm', 2000) / 20)  # More than 5% of annual rain in 3 days
+                extreme_water = latest_water_level > (threshold * 0.90)
                 
                 # Tiny boosts for extreme conditions
                 if extreme_rain and extreme_water:
-                    final_risk_score += 0.05  # Very small boost only when both conditions are extreme
+                    final_risk_score += 0.03  # Very small boost only when both conditions are extreme
                 elif extreme_rain or extreme_water:
-                    final_risk_score += 0.02  # Minimal boost for single extreme condition
+                    final_risk_score += 0.01  # Minimal boost for single extreme condition
                 
-                # Apply very conservative temporal smoothing
-                temporal_smoothing = 0.8
-                conservative_base = min(base_risk, 0.2)  # Further cap base risk influence
+                # Apply ultra-conservative temporal smoothing
+                temporal_smoothing = 0.70
+                ultra_conservative_base = min(base_risk, 0.08)  # Even lower cap on base risk influence
                 final_risk_score = (final_risk_score * temporal_smoothing + 
-                                  conservative_base * (1 - temporal_smoothing))
+                                  ultra_conservative_base * (1 - temporal_smoothing))
                 
-                # Very conservative bounds - most days should be very low risk
-                min_risk = 0.03  # Minimal minimum
-                max_risk = 0.5   # Much lower maximum
+                # Ultra-conservative bounds - ensure sunny days are 5-10% max
+                min_risk = 0.02  # Lower minimum
+                max_risk = 0.45   # Lower maximum
                 final_risk_score = np.clip(final_risk_score, min_risk, max_risk)
                 
                 flood_prediction = int(final_risk_score > 0.6)
@@ -797,27 +797,27 @@ def calculate_enhanced_geographic_risk(location):
     confluence_distance = geo_data.get('river_confluence_distance', 50)
     confluence_factor = max(0.1, 1.0 - (confluence_distance / 100))
     
-    # Extremely conservative weighted combination
+    # Ultra-conservative weighted combination
     geographic_risk = (
-        elevation_factor * 0.18 +      # Reduced elevation weight
-        river_factor * 0.12 +          # Further reduced river proximity weight
-        drainage_factor * 0.10 +       # Further reduced drainage weight
-        frequency_factor * 0.10 +      # Further reduced historical weight
-        urban_factor * 0.06 +          # Further reduced urban effects
-        rainfall_factor * 0.04 +       # Further reduced climate factor
-        soil_factor * 0.03 +           # Further reduced soil factor
+        elevation_factor * 0.12 +      # Further reduced elevation weight
+        river_factor * 0.08 +          # Even lower river proximity weight
+        drainage_factor * 0.06 +       # Even lower drainage weight
+        frequency_factor * 0.06 +      # Even lower historical weight
+        urban_factor * 0.04 +          # Even lower urban effects
+        rainfall_factor * 0.03 +       # Even lower climate factor
+        soil_factor * 0.02 +           # Even lower soil factor
         confluence_factor * 0.01       # Minimal confluence factor
-    ) * 0.7  # Apply even more conservative multiplier
+    ) * 0.5  # Apply ultra-conservative multiplier
     
-    # Extremely conservative location-specific adjustments
+    # Ultra-conservative location-specific adjustments
     if location == 'Sylhet':  # Known for extreme flooding
-        geographic_risk = min(0.35, geographic_risk * 1.01)  # Minimal boost
+        geographic_risk = min(0.25, geographic_risk * 1.005)  # Tiny boost
     elif location == 'Dhaka':  # Urban flooding issues
-        geographic_risk = min(0.32, geographic_risk * 1.01)  # Minimal boost
+        geographic_risk = min(0.22, geographic_risk * 1.005)  # Tiny boost
     elif location == 'Rangpur':  # Generally safer
-        geographic_risk = max(0.03, geographic_risk * 0.98)  # Tiny reduction
+        geographic_risk = max(0.02, geographic_risk * 0.99)  # Tiny reduction
     
-    return np.clip(geographic_risk, 0.03, 0.35)  # Much lower maximum cap
+    return np.clip(geographic_risk, 0.02, 0.25)  # Ultra-low maximum cap
 
 def calculate_fallback_risk(location, latest_rainfall, rainfall_3day, latest_water_level, threshold, geographic_risk):
     """Calculate conservative fallback risk when ML model is unavailable"""
@@ -869,25 +869,25 @@ def calculate_fallback_risk(location, latest_rainfall, rainfall_3day, latest_wat
     else:  # Dry season
         seasonal_factor = 0.98  # Tiny reduction
     
-    # Combine factors with very conservative weights
+    # Combine factors with ultra-conservative weights
     # Use extremely low base contribution from geographic risk
-    conservative_geo_risk = min(geographic_risk, 0.2)  # Further cap geographic influence
+    ultra_conservative_geo_risk = min(geographic_risk, 0.15)  # Even lower cap on geographic influence
     
     fallback_risk = (
-        rain_factor * 0.30 +           # Recent rain most important
-        cumulative_factor * 0.28 +    # 3-day accumulation important
-        water_factor * 0.25 +         # Water level important
-        conservative_geo_risk * 0.08 +  # Geographic risk minimal influence
-        0.09  # Small constant base risk
+        rain_factor * 0.20 +           # Even less weight on recent rain
+        cumulative_factor * 0.18 +    # Even less weight on 3-day accumulation
+        water_factor * 0.15 +         # Even less weight on water level
+        ultra_conservative_geo_risk * 0.04 +  # Even less geographic influence
+        0.03  # Ultra-small constant base risk for sunny days
     ) * seasonal_factor
     
-    # Very conservative location adjustments
+    # Ultra-conservative location adjustments
     geo_data = GEOGRAPHIC_DATA.get(location, {})
     if geo_data.get('flood_history_frequency', 5) > 9:  # Only extremely flood-prone areas
-        fallback_risk *= 1.02  # Tiny adjustment
+        fallback_risk *= 1.01  # Even tinier adjustment
     
-    # Ensure very conservative bounds - most conditions should result in very low risk
-    return np.clip(fallback_risk, 0.03, 0.45)
+    # Ensure ultra-conservative bounds - sunny days should be 5-10% max
+    return np.clip(fallback_risk, 0.02, 0.35)
 
 def calculate_transition_zone_factor(lat, lon):
     """Calculate a factor to smooth transitions between locations"""
