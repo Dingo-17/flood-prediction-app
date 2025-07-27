@@ -196,6 +196,12 @@
             box-shadow: 0 2px 8px rgba(99, 187, 242, 0.1);
         }
 
+        .location-item:active {
+            background-color: rgba(99, 187, 242, 0.1);
+            transform: scale(0.98);
+            transition: all 0.1s ease;
+        }
+
         .location-info h4 {
             color: #031D40;
             margin-bottom: 0.4rem;
@@ -432,16 +438,251 @@
             font-weight: 500;
         }
 
+        /* Mobile-first responsive design */
         @media (max-width: 768px) {
-            .grid {
-                grid-template-columns: 1fr;
+            .header {
+                padding: 1rem 1.5rem;
+                text-align: center;
             }
-            
+
+            .header h1 {
+                font-size: 1.8rem;
+                margin-bottom: 0.3rem;
+            }
+
+            .header p {
+                font-size: 0.9rem;
+            }
+
             .status-bar {
                 flex-direction: column;
+                gap: 0.5rem;
+                padding: 1rem 1.5rem;
+            }
+
+            .status-item {
+                min-width: auto;
+                flex: 1;
+                text-align: center;
+                padding: 0.8rem 1rem;
+            }
+
+            .container {
+                padding: 1rem;
                 gap: 1rem;
             }
+
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .card {
+                padding: 1rem;
+                margin-bottom: 1rem;
+            }
+
+            .card h3 {
+                font-size: 1.1rem;
+                margin-bottom: 0.8rem;
+            }
+
+            #map {
+                height: 250px;
+                border-radius: 8px;
+            }
+
+            .locations-grid {
+                grid-template-columns: 1fr;
+                gap: 0.8rem;
+            }
+
+            .location-item {
+                padding: 0.8rem;
+                font-size: 0.9rem;
+            }
+
+            .location-name {
+                font-size: 0.95rem;
+            }
+
+            .location-risk {
+                font-size: 0.85rem;
+                padding: 0.3rem 0.8rem;
+            }
+
+            .location-details {
+                font-size: 0.8rem;
+                margin-top: 0.3rem;
+            }
+
+            .flood-risk-profile {
+                max-height: 300px;
+            }
+
+            .flood-risk-item {
+                padding: 0.8rem;
+                margin-bottom: 0.6rem;
+            }
+
+            .flood-type-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.3rem;
+                margin-bottom: 0.4rem;
+            }
+
+            .flood-type-name {
+                font-size: 0.95rem;
+            }
+
+            .flood-risk-percentage {
+                font-size: 0.85rem;
+                align-self: flex-end;
+                margin-top: -1.5rem;
+            }
+
+            .flood-description,
+            .flood-degree,
+            .flood-depth,
+            .flood-damage {
+                font-size: 0.8rem;
+                line-height: 1.3;
+                margin-bottom: 0.3rem;
+            }
+
+            .chart-container {
+                height: 200px;
+            }
+
+            .alerts-container {
+                max-height: 200px;
+            }
+
+            .alert-item {
+                padding: 0.8rem;
+                margin-bottom: 0.6rem;
+            }
+
+            .alert-title {
+                font-size: 0.9rem;
+            }
+
+            .alert-time {
+                font-size: 0.75rem;
+            }
+
+            .alert-description {
+                font-size: 0.8rem;
+                margin-top: 0.3rem;
+            }
+
+            /* Better touch targets for mobile */
+            .location-item,
+            .alert-item,
+            .flood-risk-item {
+                min-height: 44px;
+                cursor: pointer;
+                -webkit-tap-highlight-color: rgba(99, 187, 242, 0.2);
+            }
+
+            /* Improve text readability on mobile */
+            body {
+                font-size: 14px;
+                line-height: 1.4;
+            }
+
+            /* Better spacing for mobile scrolling */
+            .container > .grid:last-child {
+                margin-bottom: 2rem;
+            }
+
+            /* Smooth scrolling for mobile */
+            .flood-risk-profile,
+            .alerts-container {
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth;
+            }
+
+            /* Better touch targets */
+            .location-item:active,
+            .flood-risk-item:active,
+            .alert-item:active {
+                background-color: rgba(99, 187, 242, 0.1);
+                transform: scale(0.98);
+                transition: all 0.1s ease;
+            }
+
+            /* Prevent text selection on touch elements */
+            .location-item,
+            .flood-risk-item,
+            .alert-item {
+                -webkit-user-select: none;
+                user-select: none;
+                -webkit-touch-callout: none;
+            }
+
+            /* Improve map controls for mobile */
+            .leaflet-control-zoom {
+                margin: 8px !important;
+            }
+
+            .leaflet-control-zoom a {
+                width: 32px !important;
+                height: 32px !important;
+                line-height: 32px !important;
+                font-size: 16px !important;
+            }
+
+            /* Better popup styling for mobile */
+            .leaflet-popup-content-wrapper {
+                border-radius: 8px !important;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+            }
+
+            .leaflet-popup-content {
+                margin: 8px 10px !important;
+                font-size: 12px !important;
+                line-height: 1.3 !important;
+            }
+
+            /* Optimize status bar for mobile */
+            .status-item {
+                border-radius: 8px;
+                background: rgba(242, 242, 242, 0.9);
+            }
+
+            /* Better card spacing on mobile */
+            .card:last-child {
+                margin-bottom: 2rem;
+            }
         }
+
+        /* Very small screens (small phones) */
+        @media (max-width: 360px) {
+            .header h1 {
+                font-size: 1.3rem;
+            }
+
+            .status-item {
+                padding: 0.5rem;
+                font-size: 0.75rem;
+            }
+
+            .card {
+                padding: 0.6rem;
+            }
+
+            #map {
+                height: 200px;
+            }
+
+            .flood-risk-profile {
+                max-height: 200px;
+            }
+        }
+
+        /* Continue with existing styles */
     </style>
 </head>
 <body>
@@ -520,14 +761,27 @@
             initializeMap();
             loadDashboardData();
             initializeChart();
+            optimizeForMobile(); // Apply mobile optimizations
             
             // Auto-refresh every 5 minutes
             setInterval(refreshData, 300000);
         });
 
         function initializeMap() {
-            // Initialize Leaflet map centered on Bangladesh
-            map = L.map('map').setView([23.6850, 90.3563], 7);
+            // Initialize Leaflet map centered on Bangladesh with mobile-friendly options
+            map = L.map('map', {
+                touchZoom: true,
+                scrollWheelZoom: false, // Disable scroll wheel zoom to prevent accidental zooming
+                doubleClickZoom: true,
+                boxZoom: false, // Not useful on mobile
+                keyboard: false, // Not useful on mobile
+                zoomControl: true,
+                attributionControl: true
+            }).setView([23.6850, 90.3563], 7);
+            
+            // Enable scroll wheel zoom only when map is focused (better mobile UX)
+            map.on('focus', function() { map.scrollWheelZoom.enable(); });
+            map.on('blur', function() { map.scrollWheelZoom.disable(); });
             
             // Add OpenStreetMap tiles
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -614,18 +868,18 @@
                     }
                     
                     const popupContent = `
-                        <div style="min-width: 200px; font-family: 'Open Sans', sans-serif;">
-                            <h4 style="margin: 0 0 10px 0; color: #031D40;">${data.location}</h4>
-                            <div style="background: ${riskColor}; color: white; padding: 5px 10px; border-radius: 15px; text-align: center; font-weight: 600; margin-bottom: 10px;">
+                        <div style="min-width: 180px; max-width: 250px; font-family: 'Open Sans', sans-serif;">
+                            <h4 style="margin: 0 0 8px 0; color: #031D40; font-size: 14px;">${data.location}</h4>
+                            <div style="background: ${riskColor}; color: white; padding: 4px 8px; border-radius: 12px; text-align: center; font-weight: 600; margin-bottom: 8px; font-size: 13px;">
                                 ${data.status} (${(data.risk_probability * 100).toFixed(0)}%)
                             </div>
-                            <div style="font-size: 12px; color: #113240;">
-                                <div><strong>Rainfall:</strong> ${data.current_rainfall.toFixed(1)}mm</div>
-                                <div><strong>Water Level:</strong> ${data.current_water_level.toFixed(1)}m</div>
-                                <div><strong>Elevation:</strong> ${data.geographic_factors.elevation_m.toFixed(1)}m</div>
-                                <div><strong>River Distance:</strong> ${data.geographic_factors.distance_to_river_km.toFixed(1)}km</div>
+                            <div style="font-size: 11px; color: #113240; line-height: 1.3;">
+                                <div style="margin-bottom: 2px;"><strong>Rainfall:</strong> ${data.current_rainfall.toFixed(1)}mm</div>
+                                <div style="margin-bottom: 2px;"><strong>Water Level:</strong> ${data.current_water_level.toFixed(1)}m</div>
+                                <div style="margin-bottom: 2px;"><strong>Elevation:</strong> ${data.geographic_factors.elevation_m.toFixed(1)}m</div>
+                                <div style="margin-bottom: 2px;"><strong>River Distance:</strong> ${data.geographic_factors.distance_to_river_km.toFixed(1)}km</div>
                                 ${primaryRiskInfo}
-                                ${data.geographic_factors.interpolated ? '<div style="font-style: italic; margin-top: 5px;">*Interpolated data</div>' : ''}
+                                ${data.geographic_factors.interpolated ? '<div style="font-style: italic; margin-top: 4px; font-size: 10px;">*Interpolated data</div>' : ''}
                             </div>
                         </div>
                     `;
@@ -648,8 +902,45 @@
             });
         }
 
+        // Mobile-specific optimizations
+        function isMobile() {
+            return window.innerWidth <= 768;
+        }
+        
+        function optimizeForMobile() {
+            if (isMobile()) {
+                // Adjust map initial zoom for mobile
+                if (map) {
+                    map.setZoom(6);
+                }
+                
+                // Add touch-friendly markers
+                document.querySelectorAll('.location-item').forEach(item => {
+                    item.style.cursor = 'pointer';
+                });
+                
+                // Optimize popup positioning for mobile
+                if (map && map.options) {
+                    map.options.closePopupOnClick = false; // Keep popups open longer on mobile
+                }
+            }
+        }
+        
+        // Handle window resize for responsive behavior
+        window.addEventListener('resize', function() {
+            if (map) {
+                setTimeout(() => {
+                    map.invalidateSize();
+                    optimizeForMobile();
+                }, 100);
+            }
+        });
+        
+        // Optimize chart for mobile
         function initializeChart() {
             const ctx = document.getElementById('riskChart').getContext('2d');
+            const isMobileDevice = isMobile();
+            
             riskChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -659,27 +950,56 @@
                         data: [],
                         borderColor: '#e74c3c',
                         backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                        borderWidth: 2,
-                        fill: true
+                        borderWidth: isMobileDevice ? 1.5 : 2,
+                        fill: true,
+                        tension: 0.3
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: !isMobileDevice, // Hide legend on mobile to save space
+                            position: 'top'
+                        }
+                    },
                     scales: {
                         y: {
                             beginAtZero: true,
                             max: 1,
                             ticks: {
                                 callback: function(value) {
-                                    return (value * 100) + '%';
+                                    return (value * 100).toFixed(0) + '%';
+                                },
+                                font: {
+                                    size: isMobileDevice ? 10 : 12
                                 }
+                            },
+                            grid: {
+                                color: 'rgba(99, 187, 242, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxTicksLimit: isMobileDevice ? 4 : 7, // Fewer ticks on mobile
+                                font: {
+                                    size: isMobileDevice ? 10 : 12
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(99, 187, 242, 0.1)'
                             }
                         }
                     },
-                    plugins: {
-                        legend: {
-                            display: false
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    elements: {
+                        point: {
+                            radius: isMobileDevice ? 3 : 4,
+                            hoverRadius: isMobileDevice ? 5 : 6
                         }
                     }
                 }
