@@ -117,6 +117,8 @@ npx cap run ios
 
 **Production URL**: https://ai-flood-prediction-system.onrender.com
 
+**Latest Update**: Fixed build command issue and triggered new deployment
+
 **Test Backend Status**:
 ```bash
 cd /Users/digantohaque/python/flood-ios-app
@@ -125,9 +127,18 @@ cd /Users/digantohaque/python/flood-ios-app
 
 **Current Status**: 
 - ✅ GitHub repository created and code pushed
-- ✅ Render deployment triggered with correct configuration
+- ✅ Render deployment configuration fixed with explicit build script
+- ✅ New deployment triggered with correct build command
 - 🕐 Deployment in progress (typically takes 5-10 minutes)
 - 🎯 **Next**: Wait for deployment to complete, then proceed to Step 2
+
+**Manual Configuration** (if needed):
+If automatic deployment continues to fail, manually configure in Render dashboard:
+1. Go to https://dashboard.render.com
+2. Select service: ai-flood-prediction-system
+3. Settings → Build Command: `pip install -r requirements-production.txt`
+4. Settings → Start Command: `python app.py`
+5. Manual Deploy → Deploy latest commit
 
 ### Step 2: Configure Production API
 ✅ **COMPLETED** - iOS app configured for production backend:
