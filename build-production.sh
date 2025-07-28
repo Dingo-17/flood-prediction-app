@@ -45,7 +45,7 @@ echo "3. Fill out App Store Connect metadata"
 echo "4. Set up privacy policy URL"
 echo "5. Configure app pricing and availability"
 echo ""
-echo "🔗 Backend URL: https://ai-flood-prediction-system.onrender.com"
+echo "🔗 Backend URL: https://flood-prediction-app-lkmp.onrender.com"
 echo ""
 
 # Open Xcode
