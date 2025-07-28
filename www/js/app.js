@@ -6,7 +6,7 @@ let riskChart;
 // API Configuration
 const API_CONFIG = {
     // Production URL (Render.com)
-    PRODUCTION: 'https://ai-flood-prediction-system.onrender.com',
+    PRODUCTION: 'https://flood-prediction-app-lkmp.onrender.com',
     // Local development URL
     DEVELOPMENT: 'http://192.168.1.164:10000',
     // Current environment
