@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Deploy ML-Enabled Backend to Render
+echo "🧠 Deploying Full ML Backend to Render..."
+
+echo ""
+echo "📋 MANUAL RENDER CONFIGURATION STEPS:"
+echo ""
+echo "1. 🌐 Go to: https://dashboard.render.com"
+echo "2. 🎯 Click on: 'flood-prediction-app-lkmp' service"
+echo "3. ⚙️ Click 'Settings' tab"
+echo "4. 🔧 Update Start Command to:"
+echo "   python app_ml_production.py"
+echo ""
+echo "5. 💾 Click 'Save Changes'"
+echo "6. 🚀 Go to 'Manual Deploy' → 'Deploy latest commit'"
+echo ""
+
+echo "✅ CHANGES IN NEW ML VERSION:"
+echo "- 🧠 Advanced Random Forest ML model (same as website)"
+echo "- 📊 9-feature prediction analysis"
+echo "- 🌧️ Enhanced weather data simulation"
+echo "- 🗺️ Complex geographic risk calculation"
+echo "- 🔄 Fallback to mathematical model if ML fails"
+echo "- 📈 2,500 synthetic training samples"
+echo "- 🎯 Higher prediction accuracy"
+echo ""
+
+echo "🔍 VERIFY DEPLOYMENT:"
+echo "After updating, test the API:"
+echo "curl -s 'https://flood-prediction-app-lkmp.onrender.com/' | head -10"
+echo ""
+echo "✅ Look for:"
+echo "- 'ml_enabled': true"
+echo "- 'version': '2.0.0'"
+echo "- 'model_features': [...9 features...]"
+echo ""
+
+echo "📱 iOS APP UPDATE:"
+echo "The iOS app will automatically use the upgraded ML backend!"
+echo "No changes needed to the iOS app - same API endpoints."
+echo ""
+
+echo "🔗 Dashboard: https://dashboard.render.com"
+echo "🎯 Service: flood-prediction-app-lkmp"
+echo "⚡ Start Command: python app_ml_production.py"
