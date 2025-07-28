@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+echo "🚀 Starting build process..."
+echo "📦 Installing Python packages directly..."
+pip install flask==3.1.1 flask-cors==6.0.1 scikit-learn==1.7.1 pandas==2.3.1 numpy==2.2.6 requests==2.32.4 joblib==1.5.1 gunicorn==23.0.0 python-dotenv==1.0.1
+echo "✅ Build completed successfully!"
