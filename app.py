@@ -151,13 +151,22 @@ def create_and_train_models():
 
 # Load or create models
 try:
+    # Try to load existing models (will fail on first deployment)
     rf_model = joblib.load('models/rf_flood_model.pkl')
     scaler = joblib.load('models/feature_scaler.pkl')
     feature_cols = joblib.load('models/feature_columns.pkl')
-    print("Models loaded successfully!")
+    print("✅ Models loaded successfully from files!")
 except Exception as e:
-    print(f"Training new models...")
-    rf_model, scaler, feature_cols = create_and_train_models()
+    print(f"⚠️ Model files not found, training new models: {str(e)}")
+    try:
+        rf_model, scaler, feature_cols = create_and_train_models()
+        print("✅ New models trained successfully!")
+    except Exception as training_error:
+        print(f"❌ Error training models: {str(training_error)}")
+        # Set default models to prevent app crash
+        rf_model = None
+        scaler = None
+        feature_cols = None
 
 # Configuration
 OPENWEATHER_API_KEY = os.environ.get('OPENWEATHER_API_KEY', '4d6eb4cfda31ca9dd9e06e83566e0e7a')
@@ -255,8 +264,20 @@ GEOGRAPHIC_DATA = {
 
 @app.route('/')
 def dashboard():
-    """Main dashboard page"""
-    return render_template('dashboard.html')
+    """Main dashboard page - API status"""
+    return jsonify({
+        "message": "AI Flood Prediction System API",
+        "status": "live",
+        "version": "1.0.0",
+        "endpoints": [
+            "/api/locations",
+            "/api/predict/<location>",
+            "/api/predict/coordinates/<lat>/<lon>",
+            "/api/history/<location>",
+            "/api/alerts",
+            "/api/status"
+        ]
+    })
 
 @app.route('/api/locations')
 def get_locations():
